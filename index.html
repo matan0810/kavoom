@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KAVOOM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Secular+One&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- page:start -->
+<div id="app" lang="he" dir="rtl">
+
+  <section id="menu" class="screen">
+    <header class="hero">
+      <canvas id="demo" aria-hidden="true"></canvas>
+      <div class="hero-text">
+        <h1 dir="ltr">KAVOOM</h1>
+        <p data-t="tagline"></p>
+      </div>
+    </header>
+
+    <nav class="bar">
+      <div class="seg" role="group" data-key="tab">
+        <button type="button" data-val="local" data-t="tabLocal"></button>
+        <button type="button" data-val="online" data-t="tabOnline"></button>
+      </div>
+      <div class="bar-end">
+        <button type="button" id="moreBtn" class="btn" data-t="moreSettings"></button>
+        <div class="seg" role="group" aria-label="Language" data-key="lang">
+          <button type="button" data-val="he">עב</button>
+          <button type="button" data-val="en">EN</button>
+        </div>
+      </div>
+    </nav>
+
+    <div id="localPane" class="menu-grid">
+      <div class="block">
+        <h2 data-t="players"></h2>
+        <ul id="slots" class="slots"></ul>
+      </div>
+      <div class="block">
+        <h2 data-t="settings"></h2>
+        <div class="setting">
+          <span class="setting-name" data-t="length"></span>
+          <div class="seg" role="group" data-key="length">
+            <button type="button" data-val="short" data-t="short"></button>
+            <button type="button" data-val="normal" data-t="normal"></button>
+            <button type="button" data-val="long" data-t="long"></button>
+          </div>
+        </div>
+        <div class="setting">
+          <span class="setting-name" data-t="botLevel"></span>
+          <div class="seg" role="group" data-key="botLevel">
+            <button type="button" data-val="easy" data-t="easy"></button>
+            <button type="button" data-val="medium" data-t="medium"></button>
+            <button type="button" data-val="hard" data-t="hard"></button>
+          </div>
+        </div>
+        <div class="setting">
+          <span class="setting-name" data-t="powerups"></span>
+          <div class="seg" role="group" data-key="powerups">
+            <button type="button" data-val="on" data-t="on"></button>
+            <button type="button" data-val="off" data-t="off"></button>
+          </div>
+        </div>
+        <button type="button" id="start" class="btn primary big" data-t="start"></button>
+        <p id="startHint" class="hint"></p>
+        <details class="how">
+          <summary data-t="howTitle"></summary>
+          <ul class="howto">
+            <li data-t="how1"></li>
+            <li data-t="how2"></li>
+            <li data-t="how3"></li>
+            <li data-t="how4"></li>
+          </ul>
+        </details>
+      </div>
+    </div>
+
+    <div id="onlinePane" class="menu-grid" hidden>
+      <div class="block">
+        <h2 data-t="you"></h2>
+        <input id="onlineName" class="field" maxlength="10" autocomplete="off">
+        <div id="onlineColors"></div>
+        <p class="hint" data-t="onlineKeys"></p>
+      </div>
+      <div class="block" id="onlineSide"></div>
+    </div>
+  </section>
+
+  <section id="game" class="screen" hidden>
+    <aside class="side">
+      <div class="side-head">
+        <strong class="brand" dir="ltr">KAVOOM</strong>
+        <span id="roundLabel"></span>
+      </div>
+      <ol id="scores" class="scores"></ol>
+      <p id="targetLabel" class="hint"></p>
+      <div class="side-actions">
+        <button type="button" id="pauseBtn" class="btn"></button>
+        <button type="button" id="gearBtn" class="btn" data-t="settings"></button>
+        <button type="button" id="quitBtn" class="btn"></button>
+      </div>
+    </aside>
+    <div class="arena-wrap" id="arenaWrap">
+      <div class="arena-box">
+        <canvas id="arena"></canvas>
+        <div id="count" class="count" hidden></div>
+        <div id="banner" class="banner" hidden></div>
+      </div>
+    </div>
+    <div id="pads" class="pads" dir="ltr" hidden></div>
+  </section>
+
+  <div id="overlay" class="overlay" hidden></div>
+</div>
+<script type="module" src="js/main.js"></script>
+<!-- page:end -->
+</body>
+</html>

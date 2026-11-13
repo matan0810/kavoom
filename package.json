@@ -1,0 +1,17 @@
+{
+  "name": "kavoom",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KAVOOM: a line game for the browser, local and online",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

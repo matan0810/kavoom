@@ -1,0 +1,111 @@
+// Hebrew and English strings. t('key', ...args) returns the text in the current language.
+
+const one = (n, he1, he, en1, en) => ({ he: n === 1 ? he1 : he, en: n === 1 ? en1 : en });
+
+const STRINGS = {
+  tagline: { he: 'משאירים קו. לא נוגעים בכלום. האחרון שנשאר מנצח.', en: 'Leave a line. Touch nothing. Last one alive wins.' },
+  tabLocal: { he: 'מכשיר אחד', en: 'One device' },
+  tabOnline: { he: 'אונליין', en: 'Online' },
+  players: { he: 'משתתפים', en: 'Players' },
+  settings: { he: 'הגדרות', en: 'Settings' },
+  length: { he: 'אורך משחק', en: 'Match length' },
+  short: { he: 'קצר', en: 'Short' },
+  normal: { he: 'רגיל', en: 'Normal' },
+  long: { he: 'ארוך', en: 'Long' },
+  botLevel: { he: 'רמת הבוטים', en: 'Bot level' },
+  easy: { he: 'קל', en: 'Easy' },
+  medium: { he: 'בינוני', en: 'Medium' },
+  hard: { he: 'קשה', en: 'Hard' },
+  powerups: { he: 'בונוסים', en: 'Power-ups' },
+  on: { he: 'פעיל', en: 'On' },
+  off: { he: 'כבוי', en: 'Off' },
+  auto: { he: 'אוטומטי', en: 'Auto' },
+  start: { he: 'התחל משחק', en: 'Start game' },
+  needTwo: { he: 'צריך לפחות שני משתתפים.', en: 'At least two players are needed.' },
+  startHint: (n, target) => ({ he: `${n} משתתפים, עד ${target} נקודות בהפרש 2.`, en: `${n} players, first to ${target}, win by 2.` }),
+  howTitle: { he: 'איך משחקים', en: 'How to play' },
+  how1: { he: 'לכל שחקן שני מקשים: שמאלה וימינה. הקו לא עוצר.', en: 'Each player has two keys: left and right. The line never stops.' },
+  how2: { he: 'בשובל נפתחים חורים, ואפשר לעבור דרכם.', en: 'Gaps open in every trail, and you can slip through them.' },
+  how3: { he: 'כל פסילה נותנת נקודה לכל מי שעדיין במשחק.', en: 'Every crash gives a point to everyone still alive.' },
+  how4: { he: 'בונוס ירוק משפיע עליך, אדום על היריבים, כחול על כולם.', en: 'Green power-ups affect you, red ones your rivals, blue ones everyone.' },
+  modeOff: { he: 'כבוי', en: 'Off' },
+  modeHuman: { he: 'שחקן', en: 'Player' },
+  modeBot: { he: 'בוט', en: 'Bot' },
+  left: { he: 'שמאלה', en: 'Left' },
+  right: { he: 'ימינה', en: 'Right' },
+  pressKey: { he: 'הקש מקש', en: 'Press a key' },
+  cpu: { he: 'שחקן מחשב', en: 'Computer player' },
+  pickColor: { he: 'בחירת צבע', en: 'Choose colour' },
+  playerName: (n) => ({ he: `שם שחקן ${n}`, en: `Player ${n} name` }),
+  moreSettings: { he: 'קול ומסך', en: 'Sound & display' },
+  sound: { he: 'צליל', en: 'Sound' },
+  volume: { he: 'עוצמה', en: 'Volume' },
+  shake: { he: 'רעידת מסך', en: 'Screen shake' },
+  pads: { he: 'כפתורי מגע', en: 'Touch buttons' },
+  fullscreen: { he: 'מסך מלא', en: 'Full screen' },
+  close: { he: 'סגור', en: 'Close' },
+  round: (n) => ({ he: `סיבוב ${n}`, en: `Round ${n}` }),
+  target: (n) => ({ he: `עד ${n} נקודות, בהפרש 2`, en: `First to ${n}, win by 2` }),
+  pause: { he: 'השהה', en: 'Pause' },
+  resume: { he: 'המשך', en: 'Resume' },
+  menu: { he: 'תפריט', en: 'Menu' },
+  leave: { he: 'עזוב', en: 'Leave' },
+  paused: { he: 'המשחק מושהה', en: 'Paused' },
+  pausedText: { he: 'רווח ממשיך את המשחק.', en: 'Space resumes the game.' },
+  mainMenu: { he: 'תפריט ראשי', en: 'Main menu' },
+  quitTitle: { he: 'לצאת מהמשחק?', en: 'Quit this match?' },
+  quitText: { he: 'הניקוד של המשחק הנוכחי יימחק.', en: 'The current score will be lost.' },
+  keepPlaying: { he: 'המשך לשחק', en: 'Keep playing' },
+  quitYes: { he: 'צא לתפריט', en: 'Quit to menu' },
+  leaveTitle: { he: 'לעזוב את החדר?', en: 'Leave the room?' },
+  leaveText: { he: 'בוט ינהג בקו שלך עד סוף המשחק.', en: 'A bot will steer your line for the rest of the match.' },
+  leaveYes: { he: 'עזוב חדר', en: 'Leave room' },
+  roundOf: (name) => ({ he: `הסיבוב של ${name}`, en: `${name} takes the round` }),
+  draw: { he: 'תיקו, אף אחד לא שרד', en: 'Draw. Nobody survived' },
+  spaceNext: { he: 'רווח לסיבוב הבא', en: 'Space for the next round' },
+  nextSoon: { he: 'הסיבוב הבא מתחיל מיד', en: 'Next round starts in a moment' },
+  wonMatch: (name) => ({ he: `${name} ניצח במשחק`, en: `${name} wins the match` }),
+  afterRounds: (n) => one(n, 'אחרי סיבוב אחד', `אחרי ${n} סיבובים`, 'After 1 round', `After ${n} rounds`),
+  rematch: { he: 'משחק חוזר', en: 'Rematch' },
+  backToRoom: { he: 'חזרה לחדר', en: 'Back to room' },
+  hostCanRematch: { he: 'המארח יכול להתחיל משחק חוזר.', en: 'The host can start a rematch.' },
+  you: { he: 'אתה', en: 'You' },
+  yourName: { he: 'השם שלך', en: 'Your name' },
+  player: { he: 'שחקן', en: 'Player' },
+  createRoom: { he: 'צור חדר', en: 'Create room' },
+  joinRoom: { he: 'הצטרף', en: 'Join' },
+  roomCode: { he: 'קוד חדר', en: 'Room code' },
+  room: (code) => ({ he: `חדר ${code}`, en: `Room ${code}` }),
+  copyLink: { he: 'העתק קישור', en: 'Copy link' },
+  copied: { he: 'הועתק', en: 'Copied' },
+  host: { he: 'מארח', en: 'Host' },
+  addBot: { he: 'הוסף בוט', en: 'Add bot' },
+  remove: { he: 'הסר', en: 'Remove' },
+  away: { he: 'מנותק', en: 'Away' },
+  waitingHost: { he: 'ממתינים שהמארח יתחיל.', en: 'Waiting for the host to start.' },
+  matchRunning: { he: 'משחק רץ כרגע בחדר.', en: 'A match is running in this room.' },
+  connecting: { he: 'מתחבר…', en: 'Connecting…' },
+  reconnecting: { he: 'החיבור נפל, מתחבר מחדש…', en: 'Connection lost, reconnecting…' },
+  lost: { he: 'החיבור לשרת אבד.', en: 'Lost connection to the server.' },
+  noServer: { he: 'אין חיבור לשרת המשחק. אונליין עובד רק כשהמשחק רץ מהשרת שלו.', en: 'Cannot reach the game server. Online play works only when the game runs from its own server.' },
+  errNoroom: { he: 'לא נמצא חדר עם הקוד הזה.', en: 'No room with that code.' },
+  errFull: { he: 'החדר מלא.', en: 'The room is full.' },
+  errBusy: { he: 'השרת עמוס כרגע.', en: 'The server is busy right now.' },
+  onlineKeys: { he: 'במקלדת: ← → או A D. בטלפון: כפתורי מגע.', en: 'Keyboard: ← → or A D. Phone: touch buttons.' },
+};
+
+let lang = 'he';
+
+export function setLang(l) {
+  lang = l === 'en' ? 'en' : 'he';
+}
+
+export function getLang() {
+  return lang;
+}
+
+export function t(key, ...args) {
+  const entry = STRINGS[key];
+  if (!entry) return key;
+  return (typeof entry === 'function' ? entry(...args) : entry)[lang];
+}

@@ -9,9 +9,9 @@ only in their own browser.
 
 ## What is protected
 
-- **Files:** the server serves only `index.html`, `favicon.svg`, `manifest.webmanifest`
-  and the `js/`, `css/` and `icons/` folders, checked after the path is resolved. Server
-  code, tests and project files are never served.
+- **Files:** the server serves only the built site in `dist/`: `index.html`, `favicon.svg`,
+  `manifest.webmanifest` and the `assets/` and `icons/` folders, checked after the path is
+  resolved. Server code, sources, tests and project files are never served.
 - **Headers:** a Content-Security-Policy that allows scripts only from the site itself,
   no framing, `nosniff`, and HSTS behind HTTPS.
 - **Online:** connections are accepted only from the game's own site (Origin check).

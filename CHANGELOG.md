@@ -7,6 +7,18 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Added
+- The Back button (and the phone's back gesture) now steps back inside the game: it closes an open dialog, opens the game menu during a match, returns from a finished online match to the room, and leaves a room's lobby. It no longer throws you out of the site in the middle of a game.
+
+### Changed
+- Phone layout redesigned. On an upright phone the arena is turned to stand tall and fills the screen instead of sitting in a small strip; steering is unchanged, since left and right are relative to your line.
+- On small screens the game shows one strip of scores and a single menu button (resume, sound and display, leave) instead of three small buttons.
+- Phone menu: bigger buttons and colour dots, one row per player, settings that fill the row, and Start pinned to the bottom of the screen. Key bindings are hidden on touch screens.
+- Dialog buttons stack into full-width buttons on phones.
+- Player name fields show the colour's name as a placeholder until a name is typed.
+- The room code is removed from the address bar once you have joined.
+- The page is now a React app built with Vite; the server serves the built files and caches them properly, so repeat visits load faster.
+
 ## [1.1.0] - 2026-11-14
 
 ### Security

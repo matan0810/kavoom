@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ARENA, BASE, POWERUPS, makeRng } from '../js/config.js';
-import { Round } from '../js/sim/round.js';
-import { Match } from '../js/sim/match.js';
+import { ARENA, BASE, POWERUPS, makeRng } from '../shared/config.js';
+import { Round } from '../shared/sim/round.js';
+import { Match } from '../shared/sim/match.js';
 
 const def = (id) => POWERUPS.find((d) => d.id === id);
 
@@ -247,7 +247,7 @@ test('bot rounds always finish with a consistent result', () => {
 });
 
 test('the game version matches package.json', async () => {
-  const { VERSION } = await import('../js/config.js');
+  const { VERSION } = await import('../shared/config.js');
   const { readFile } = await import('node:fs/promises');
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(VERSION, pkg.version);

@@ -6,7 +6,7 @@ services:
     plan: free
     branch: main # production only; dev never deploys
     region: frankfurt # fixed when the service is created; see README
-    buildCommand: npm ci
+    buildCommand: npm ci --include=dev && npm run build # dev packages hold the build tool
     startCommand: npm start
     healthCheckPath: /healthz
     autoDeploy: true

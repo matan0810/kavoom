@@ -1,4 +1,5 @@
-// Hebrew and English strings. t('key', ...args) returns the text in the current language.
+// Hebrew and English strings. Components get a t('key', ...args) function for the
+// current language from useT() in state/SettingsContext.jsx.
 
 const one = (n, he1, he, en1, en) => ({ he: n === 1 ? he1 : he, en: n === 1 ? en1 : en });
 
@@ -34,7 +35,6 @@ const STRINGS = {
   left: { he: 'שמאלה', en: 'Left' },
   right: { he: 'ימינה', en: 'Right' },
   pressKey: { he: 'הקש מקש', en: 'Press a key' },
-  cpu: { he: 'שחקן מחשב', en: 'Computer player' },
   pickColor: { he: 'בחירת צבע', en: 'Choose colour' },
   playerName: (n) => ({ he: `שם שחקן ${n}`, en: `Player ${n} name` }),
   moreSettings: { he: 'קול ומסך', en: 'Sound & display' },
@@ -52,6 +52,7 @@ const STRINGS = {
   leave: { he: 'עזוב', en: 'Leave' },
   paused: { he: 'המשחק מושהה', en: 'Paused' },
   pausedText: { he: 'רווח ממשיך את המשחק.', en: 'Space resumes the game.' },
+  gameMenu: { he: 'תפריט המשחק', en: 'Game menu' },
   mainMenu: { he: 'תפריט ראשי', en: 'Main menu' },
   quitTitle: { he: 'לצאת מהמשחק?', en: 'Quit this match?' },
   quitText: { he: 'הניקוד של המשחק הנוכחי יימחק.', en: 'The current score will be lost.' },
@@ -94,18 +95,8 @@ const STRINGS = {
   onlineKeys: { he: 'במקלדת: ← → או A D. בטלפון: כפתורי מגע.', en: 'Keyboard: ← → or A D. Phone: touch buttons.' },
 };
 
-let lang = 'he';
-
-export function setLang(l) {
-  lang = l === 'en' ? 'en' : 'he';
-}
-
-export function getLang() {
-  return lang;
-}
-
-export function t(key, ...args) {
+export function translate(lang, key, ...args) {
   const entry = STRINGS[key];
   if (!entry) return key;
-  return (typeof entry === 'function' ? entry(...args) : entry)[lang];
+  return (typeof entry === 'function' ? entry(...args) : entry)[lang === 'en' ? 'en' : 'he'];
 }

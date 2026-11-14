@@ -1,7 +1,7 @@
 // Canvas drawing. Trails accumulate on an offscreen layer; heads, items and
 // particles are redrawn on top every frame.
 
-import { POWERUPS, POWERUP_RADIUS, TARGET_COLORS } from './config.js';
+import { POWERUPS, POWERUP_RADIUS, TARGET_COLORS } from '../../shared/config.js';
 
 const TRAIL_SCALE = 2;
 const FX_DUR = {};
@@ -70,9 +70,12 @@ function glyph(ctx, id) {
 }
 
 export class Renderer {
-  constructor(canvas, w, h, { calm = false } = {}) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+  // The renderer exists before its canvas does: trails are kept on an offscreen
+  // layer, and a component attaches the visible canvas once it is mounted.
+  constructor(w, h, { calm = false } = {}) {
+    this.canvas = null;
+    this.ctx = null;
+    this.rotated = false; // draw the arena turned 90 degrees, for tall screens
     this.w = w;
     this.h = h;
     this.calm = calm; // reduced motion: no shake
@@ -84,6 +87,11 @@ export class Renderer {
     this.tctx.setTransform(TRAIL_SCALE, 0, 0, TRAIL_SCALE, 0, 0);
     this.tctx.lineCap = 'round';
     this.reset([]);
+  }
+
+  attach(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas ? canvas.getContext('2d') : null;
   }
 
   reset(colors) {
@@ -132,7 +140,7 @@ export class Renderer {
     const cv = this.canvas;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const pw = Math.max(1, Math.round(cv.clientWidth * dpr));
-    const ph = Math.max(1, Math.round((cv.clientWidth * this.h * dpr) / this.w));
+    const ph = Math.max(1, Math.round(cv.clientHeight * dpr));
     if (cv.width !== pw || cv.height !== ph) {
       cv.width = pw;
       cv.height = ph;
@@ -140,11 +148,19 @@ export class Renderer {
   }
 
   draw(round, { dt = 0, intro = false, names = [] } = {}) {
+    if (!this.canvas) return;
     this.fit();
     const { ctx, w, h } = this;
-    const scale = this.canvas.width / w;
     this.clock += dt;
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    if (this.rotated) {
+      // Arena x runs down the screen and arena y runs right to left: a pure
+      // rotation, so left and right stay left and right for every line.
+      const scale = this.canvas.width / h;
+      ctx.setTransform(0, scale, -scale, 0, h * scale, 0);
+    } else {
+      const scale = this.canvas.width / w;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    }
 
     ctx.fillStyle = '#0a0d1c';
     ctx.fillRect(0, 0, w, h);
@@ -195,6 +211,7 @@ export class Renderer {
     ctx.save();
     ctx.translate(it.x, it.y);
     ctx.scale(pulse, pulse);
+    if (this.rotated) ctx.rotate(-Math.PI / 2); // keep the icon upright
     ctx.beginPath();
     ctx.arc(0, 0, POWERUP_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = '#141930';
@@ -235,7 +252,15 @@ export class Renderer {
         ctx.fillStyle = color;
         // The name sits behind the head, away from the direction arrow.
         ctx.textBaseline = 'middle';
-        ctx.fillText(name, -Math.cos(p.angle) * 30, -Math.sin(p.angle) * 22);
+        ctx.save();
+        if (this.rotated) {
+          ctx.translate(-Math.cos(p.angle) * 22, -Math.sin(p.angle) * 30);
+          ctx.rotate(-Math.PI / 2); // keep the text upright
+        } else {
+          ctx.translate(-Math.cos(p.angle) * 30, -Math.sin(p.angle) * 22);
+        }
+        ctx.fillText(name, 0, 0);
+        ctx.restore();
       }
     }
 

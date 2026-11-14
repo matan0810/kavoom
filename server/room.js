@@ -3,9 +3,9 @@
 // tested with plain arrays standing in for connections.
 
 import { randomUUID } from 'node:crypto';
-import { ARENA, DT, LENGTHS, PALETTE, POWERUPS, BOT_LEVELS, FX_KEYS, MAX_PLAYERS, makeRng } from '../js/config.js';
-import { Round } from '../js/sim/round.js';
-import { Match } from '../js/sim/match.js';
+import { ARENA, DT, LENGTHS, PALETTE, POWERUPS, BOT_LEVELS, FX_KEYS, MAX_PLAYERS, makeRng } from '../shared/config.js';
+import { Round } from '../shared/sim/round.js';
+import { Match } from '../shared/sim/match.js';
 
 const COUNTDOWN = 2.4;
 const ROUND_PAUSE = 3;

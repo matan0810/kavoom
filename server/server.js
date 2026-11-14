@@ -1,5 +1,5 @@
-// Game server: serves the static site and runs the online rooms over WebSocket.
-//   node server/server.js        (PORT defaults to 8080)
+// Game server: serves the built site from dist/ and runs the online rooms over WebSocket.
+//   npm run build && node server/server.js        (PORT defaults to 8080)
 //
 // Environment:
 //   PORT              port to listen on
@@ -7,13 +7,15 @@
 //                     (only needed when the static site is hosted somewhere else)
 
 import http from 'node:http';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { Room } from './room.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// The browser files are built by Vite into dist/ (npm run build).
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const TICK_MS = 1000 / 60;
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
@@ -34,10 +36,12 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json',
 };
 
-// Only these files and folders are ever served. Everything else (server code,
-// package files, tests, .git) is a 404.
+// Only these files and folders inside dist/ are ever served. Everything else
+// (server code, sources, package files, tests, .git) is a 404.
 const PUBLIC_FILES = new Set(['index.html', 'favicon.svg', 'manifest.webmanifest']);
-const PUBLIC_DIRS = ['js/', 'css/', 'icons/'];
+const PUBLIC_DIRS = ['assets/', 'icons/'];
+// Files in assets/ carry a hash of their content in the name, so they never change.
+const CACHE_FOREVER = 'public, max-age=31536000, immutable';
 
 const SECURITY_HEADERS = {
   'Content-Security-Policy': [
@@ -124,7 +128,8 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
       } catch {
         return res.writeHead(404, headers).end('Not found');
       }
-      res.writeHead(200, { ...headers, 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': 'no-cache' });
+      const hashed = path.relative(ROOT, file).startsWith('assets' + path.sep);
+      res.writeHead(200, { ...headers, 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': hashed ? CACHE_FOREVER : 'no-cache' });
       res.end(req.method === 'HEAD' ? undefined : body);
     } catch (e) {
       log('request failed:', e.message);
@@ -268,6 +273,10 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (!existsSync(path.join(ROOT, 'index.html'))) {
+    console.error('dist/index.html is missing. Run "npm run build" first.');
+    process.exit(1);
+  }
   const port = Number(process.env.PORT) || 8080;
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
   const { server } = startServer({ port, allowedOrigins });

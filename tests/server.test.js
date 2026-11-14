@@ -58,19 +58,29 @@ test('serves the game with security headers', () =>
     assert.match(res.headers['content-security-policy'], /frame-ancestors 'none'/);
     assert.equal(res.headers['x-content-type-options'], 'nosniff');
     assert.equal((await get(port, '/favicon.svg')).headers['content-type'], 'image/svg+xml');
-    assert.equal((await get(port, '/js/main.js')).status, 200);
+    // The page loads one script and one stylesheet, both from assets/, and nothing inline.
+    const script = /<script type="module"[^>]* src="(\/assets\/[^"]+\.js)"><\/script>/.exec(res.body);
+    const style = /<link rel="stylesheet"[^>]* href="(\/assets\/[^"]+\.css)">/.exec(res.body);
+    assert.ok(script && style, 'index.html links its built script and stylesheet');
+    assert.doesNotMatch(res.body, /<script(?![^>]* src=)|<style|\sstyle=|\son[a-z]+=/);
+    const js = await get(port, script[1]);
+    assert.equal(js.status, 200);
+    assert.match(js.headers['content-type'], /text\/javascript/);
+    assert.match(js.headers['cache-control'], /immutable/);
+    assert.equal((await get(port, style[1])).status, 200);
+    assert.equal(res.headers['cache-control'], 'no-cache');
   }));
 
 test('a malformed URL is a 400 and does not take the server down', () =>
   withServer(async (port) => {
-    assert.equal((await get(port, '/js/%E0')).status, 400);
-    assert.equal((await get(port, '/js/%00.js')).status, 400);
+    assert.equal((await get(port, '/assets/%E0')).status, 400);
+    assert.equal((await get(port, '/assets/%00.js')).status, 400);
     assert.equal((await get(port, '/healthz')).status, 200);
   }));
 
 test('only public files are served', () =>
   withServer(async (port) => {
-    for (const p of ['/package.json', '/server/server.js', '/server/room.js', '/tests/sim.test.js', '/.git/config', '/js/..%2Fpackage.json', '/js/../server/room.js', '/js/%2E%2E/server/room.js', '/css/..%5Cserver%5Croom.js', '/README.md']) {
+    for (const p of ['/package.json', '/server/server.js', '/server/room.js', '/tests/sim.test.js', '/.git/config', '/assets/..%2Fpackage.json', '/assets/../server/room.js', '/assets/%2E%2E/%2E%2E/server/room.js', '/assets/..%5C..%5Cserver%5Croom.js', '/README.md', '/src/main.jsx', '/shared/config.js', '/vite.config.js', '/assets/../index.html.map']) {
       assert.equal((await get(port, p)).status, 404, p);
     }
     assert.equal((await get(port, '/', 'POST')).status, 405);

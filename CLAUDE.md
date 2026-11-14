@@ -10,7 +10,7 @@ This file is binding. Follow it on every task, in every session.
 
 - The owner writes in Hebrew. Answer in Hebrew.
 - Everything in the repository is in English: docs, code comments, commit messages.
-  The only Hebrew is the Hebrew UI text in `js/i18n.js`.
+  The only Hebrew is the Hebrew UI text in `src/i18n/strings.js`.
 - Keep the UI minimal. A new feature earns a control only if it cannot be a default.
 - `main` is production. **Nothing reaches `main` until the owner says to release**
   ("תעלה גרסה", "release", or the like). A request to fix or build something is not
@@ -49,7 +49,7 @@ If `dev` is behind `main`, stop and tell the owner; that should never happen.
    - New logic gets a test: simulation in `tests/sim.test.js`, rooms in
      `tests/room.test.js`, HTTP or WebSocket behaviour in `tests/server.test.js`.
    - Any UI change is checked in a real browser (Playwright is preinstalled in cloud
-     sessions; run `npm start` and drive it): desktop 1280×800 and a 390px phone,
+     sessions; run `npm run build`, then `npm start`, and drive it): desktop 1280×800 and a 390px phone,
      Hebrew and English, no console errors or CSP violations. Look at the screenshots.
    - Online changes are tested with two browser contexts in the same room.
 5. **Record.** Add a line under `## [Unreleased]` in `CHANGELOG.md` for every change
@@ -80,7 +80,7 @@ Semantic versioning, `MAJOR.MINOR.PATCH`:
 | `major` | A break with the past | saved settings reset, online protocol incompatible with old pages |
 
 The version lives in three places, kept in step by `npm run bump` and checked by a test:
-`package.json`, `package-lock.json` and `VERSION` in `js/config.js` (shown in the menu).
+`package.json`, `package-lock.json` and `VERSION` in `shared/config.js` (shown in the menu).
 
 ## 5. Releasing (only on the owner's order)
 
@@ -140,37 +140,52 @@ CHANGELOG if it matters to players. Security updates are worth a `patch` release
 ## 8. Layout
 
 ```
-index.html, css/style.css     page and styles (logical CSS properties: RTL and LTR share rules)
-favicon.svg, icons/, manifest.webmanifest
-js/config.js                  constants, VERSION, palette, power-ups, SERVER_URL
-js/sim/                       pure simulation (no DOM, no timers): round, grid, bot, match
-js/render.js, input.js, audio.js, net.js, i18n.js, main.js   browser side
-server/server.js              static files, WebSocket rooms, security limits
+index.html, vite.config.js    Vite entry page and build settings
+public/                       copied as they are: favicon.svg, icons/, manifest.webmanifest
+shared/config.js              constants, VERSION, palette, power-ups, SERVER_URL
+shared/sim/                   pure simulation (no DOM, no timers): round, grid, bot, match
+src/main.jsx, src/App.jsx     React entry and top component
+src/engine/                   no React: game.js (match state machine), renderer.js, input.js,
+                              audio.js, net.js, backButton.js
+src/state/, src/hooks/        saved settings + context; hooks that connect components to the engine
+src/i18n/strings.js           Hebrew and English strings
+src/components/               ui/ (shared controls), menu/, game/, SettingsDialog.jsx
+src/styles/                   base.css, menu.css, game.css (logical CSS properties: RTL and LTR share rules)
+dist/                         build output, not in git; this is what the server serves
+server/server.js              static files from dist/, WebSocket rooms, security limits
 server/room.js                one room: lobby, match, broadcast (no sockets, unit tested)
 scripts/bump.mjs              version bump for a release
 scripts/release-notes.mjs     CHANGELOG section for the GitHub release
 tests/                        node --test: sim, room, server
 .github/workflows/            ci.yml (tests on dev), release.yml (tag and release on main)
-render.yaml                   Render service: free plan, Frankfurt, deploys main
+render.yaml                   Render service: free plan, Frankfurt, builds and deploys main
 DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
 ```
 
-`js/sim/` must stay free of DOM and timers: the same code runs the local game, the menu
-demo and the online server.
+- `shared/sim/` must stay free of DOM and timers: the same code runs the local game, the
+  menu demo and the online server.
+- `src/engine/` must stay free of React. The match runs there; components only read
+  `game.ui` (through `useGameUi`) and call engine methods.
+- One component per file, named like the file. A component that grows past about 150 lines
+  should be split.
 
 ## 9. Commands
 
+- `npm run build`: build the site into `dist/` (needed before `npm start`)
 - `npm start`: server on http://localhost:8080 (`PORT` to change)
-- `npm test`: every test; must pass before any push
+- `npm run dev`: Vite dev server with instant reload on http://localhost:5173; run
+  `npm start` beside it for online rooms
+- `npm test`: builds, then runs every test; must pass before any push
 - `npm run bump -- patch|minor|major`: prepare a release
 
 ## 10. Security rules
 
-- Only files in `PUBLIC_FILES` / `PUBLIC_DIRS` in `server/server.js` are served, checked
-  after the path is resolved. A new public file means adding it there and to the server test.
+- Only files in `PUBLIC_FILES` / `PUBLIC_DIRS` inside `dist/` are served (`server/server.js`),
+  checked after the path is resolved. A new public file means adding it there and to the server test.
 - Validate every value from a client against a closed list; clamp every number.
-- Render player text with `textContent`, never `innerHTML`.
-- No inline scripts or styles in `index.html`; the CSP forbids them. A new external host
+- Render player text as React text (`{name}`), never with `dangerouslySetInnerHTML`.
+- No inline scripts or styles in `index.html`; the CSP forbids them. In components, the
+  `style` prop is fine (React sets it through the DOM, which the CSP allows). A new external host
   (font, CDN) needs a CSP change in `server/server.js` and a reason.
 - No secrets in the repository. Configuration that varies goes in Render environment variables.
 - Any change to the server's limits or headers gets a line under `Security` in the CHANGELOG

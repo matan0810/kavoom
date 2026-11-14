@@ -12,11 +12,16 @@ Requires Node 22 or later.
 
 ```
 npm install
+npm run build      # React app -> dist/
 npm start          # http://localhost:8080
 npm test
 ```
 
-The server serves the site and runs the online rooms (WebSocket at `/ws`).
+The browser side is a React app built with Vite. The Node server serves the built files
+from `dist/` and runs the online rooms (WebSocket at `/ws`).
+
+While working on the page, `npm run dev` gives instant reload on http://localhost:5173
+(keep `npm start` running beside it for online play).
 
 ## Branches and releases
 
@@ -41,12 +46,15 @@ The version number is shown in the game menu.
 1. On render.com: New → Blueprint, pick this repository, Apply.
 2. Render follows `main` and deploys every release on its own.
 
+The build command is `npm ci --include=dev && npm run build`. If the service was created by
+hand rather than from the Blueprint, set that build command in its settings.
+
 A service's region is fixed when it is created. To move regions, delete the service and
 create it again from the Blueprint.
 
 On the free plan the server sleeps after 15 minutes without traffic, and the first visit
 after that takes about a minute. If the static site is hosted somewhere else, set the
-server address in `SERVER_URL` in `js/config.js` and the site's origin in the server's
+server address in `SERVER_URL` in `shared/config.js` and the site's origin in the server's
 `ALLOWED_ORIGINS` environment variable.
 
 ## Keys (one device)
@@ -74,4 +82,4 @@ on phones.
 [MIT](LICENSE).
 
 The Heebo and Secular One fonts come from Google Fonts under the SIL Open Font License.
-The ws library is under the MIT license.
+The ws library, React and Vite are under the MIT license.

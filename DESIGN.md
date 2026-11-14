@@ -18,36 +18,70 @@ alive takes the round.
 
 ## 2. Code layout
 
+The browser side is a React app, built by Vite into `dist/`. The Node server serves
+`dist/` and runs the online rooms. The simulation is shared by both.
+
 ```
-index.html               the screens
-css/style.css            styles (tokens on :root, logical properties for RTL and LTR)
-favicon.svg, icons/, manifest.webmanifest
-js/config.js             constants: version, arena, physics, palette, keys, power-ups
-js/sim/grid.js           occupancy grid for collisions
-js/sim/round.js          one round: movement, collisions, gaps, power-ups, round points
-js/sim/bot.js            computer player decisions
-js/sim/match.js          cumulative score, target and win condition
-js/render.js             canvas drawing, particles and effects
-js/input.js              keyboard and touch
-js/audio.js              WebAudio sound effects
-js/net.js                WebSocket client with automatic rejoin
-js/i18n.js               Hebrew and English strings
-js/main.js               menu, game loop, state machine, local and online modes
-server/server.js         static files + WebSocket rooms + security limits
+index.html               Vite entry page (loads src/main.jsx)
+public/                  files copied as they are: favicon.svg, icons/, manifest.webmanifest
+shared/config.js         constants: version, arena, physics, palette, keys, power-ups
+shared/sim/grid.js       occupancy grid for collisions
+shared/sim/round.js      one round: movement, collisions, gaps, power-ups, round points
+shared/sim/bot.js        computer player decisions
+shared/sim/match.js      cumulative score, target and win condition
+src/main.jsx             mounts the app
+src/App.jsx              picks the screen (menu or game), owns the online room
+src/engine/              plain JavaScript, no React:
+  game.js                  match state machine for local and online play
+  renderer.js              canvas drawing, particles and effects
+  input.js, audio.js       keyboard and touch state, WebAudio sound effects
+  net.js                   WebSocket client with automatic rejoin
+  backButton.js            browser Back button handling
+  index.js                 the single game, input and sound objects
+src/state/               saved settings and the context that hands them to components
+src/hooks/               useGameUi, useOnlineRoom, useBackLayer, useAnimationFrame, useMediaQuery
+src/i18n/strings.js      Hebrew and English strings
+src/components/ui/       Segmented, Swatches, SettingRow, Dialog
+src/components/menu/     MenuScreen, Hero, TopBar, LocalPane, PlayerSlot, MatchSettings,
+                         OnlinePane, JoinForm, RoomLobby
+src/components/game/     GameScreen, GameHud, Scoreboard, Arena, TouchPads, GameDialogs
+src/components/SettingsDialog.jsx
+src/styles/              base.css, menu.css, game.css (tokens on :root, logical properties)
+server/server.js         static files from dist/ + WebSocket rooms + security limits
 server/room.js           one online room (no sockets, unit tested)
 scripts/                 release helpers
 tests/                   node --test: simulation, rooms, server
 ```
 
-The key rule: `js/sim/` is pure. No DOM, canvas or clock. It takes a seeded random
-generator and reports outward through hooks (`segment`, `death`, `pickup`, `clear`).
-The same code runs the local game, the menu demo and the online server, and it is
-tested in Node.
+Two rules hold the structure together:
+
+- `shared/sim/` is pure. No DOM, canvas or clock. It takes a seeded random generator
+  and reports outward through hooks (`segment`, `death`, `pickup`, `clear`). The same
+  code runs the local game, the menu demo and the online server, and it is tested in Node.
+- The match does not live in React. `src/engine/game.js` runs it at 120 steps a second
+  and draws straight to the canvas. Whenever something a person can read changes (state,
+  scores, countdown number, round banner) it publishes a small `ui` object, and the
+  components re-render from that. Components call methods on the engine (`pause`,
+  `startRound`, `stop`); they never touch the simulation.
+
+### Why React and Vite
+
+The first version was one 1000-line `main.js` that built the page by hand with
+`document.createElement`. React was chosen for the rewrite because each piece of the
+screen becomes a small file that reads like the HTML it produces, it is the most widely
+taught and documented UI library, and it needs no server-side changes: the build output
+is static files. Vite is the standard React build tool and adds one command
+(`npm run build`). Heavier options were rejected: a framework such as Next.js would
+replace the hand-written WebSocket server for no gain, and TypeScript would add a second
+thing to learn at the same time.
 
 ## 3. Simulation
 
 ### 3.1 Time and space
 - Fixed logical arena of 1120×720 units. The canvas scales to the window; the logic does not.
+- When the room for the arena is clearly taller than wide (an upright phone), the arena is
+  drawn turned 90 degrees so it fills the screen. Only the picture turns: steering is relative
+  to each line, and names and power-up icons are drawn upright.
 - Fixed step of 1/120 s with an accumulator, so results do not depend on frame rate.
 - A frame longer than 100 ms (background tab) is clamped, so there is no jump of dozens of steps.
 
@@ -119,7 +153,7 @@ menu → countdown (3, 2, 1) → playing → round end → countdown ...
 ```
 
 - During the countdown each player sees their start point, a direction arrow and their name.
-- Space pauses a local game and skips the round-end pause. Esc pauses. Switching tabs pauses.
+- Space pauses a local game and skips the round-end pause. Esc and the Back button pause. Switching tabs pauses.
 - Leaving a match always asks first, and the game is frozen while it asks.
 
 ## 6. Bots
@@ -156,8 +190,8 @@ Any key can be rebound in the menu: click the key, then press the new one. A key
 already taken swaps with its owner.
 
 Touch:
-- One human on the device: two large thumb buttons, beside the arena in landscape and
-  below it in portrait.
+- One human on the device: two large thumb buttons, on both sides of the arena in landscape
+  and below it in portrait. Touching the left or right half of the arena steers too.
 - Several humans on one touch screen: a pair of buttons in each player's colour, up to four.
 - Buttons appear automatically on touch devices and can be forced on or off in settings.
 - Full screen (with a landscape lock where the browser allows it) and a screen wake lock.
@@ -177,7 +211,15 @@ Touch:
   saturated, distinct player colours. Display face Secular One, body face Heebo.
 - Menu: a live bot demo on top, a bar with mode (one device / online), version, sound
   and display settings, and language. Below it, players on one side and settings on the other.
-- Game: the scoreboard beside the arena (above it on narrow screens), updated on every knockout.
+- Game: the scoreboard beside the arena, updated on every knockout. On small screens and
+  touch devices it is one strip above the arena with a single menu button, which opens the
+  game menu (resume, sound and display, leave).
+- Phone menu: one column, one row per player, key bindings hidden, controls at least 46px
+  tall, and Start pinned to the bottom of the screen.
+- Back button: every dialog, the game screen and an online room own one browser history
+  entry. Back closes the top one: a dialog closes, a room's lobby is left, a finished online
+  match returns to the room. During a match Back opens the game menu and the match stays.
+  On the bare menu Back leaves the site as usual.
 - Colours: tapping the dot in a player's row opens the picker. On one device a taken
   colour swaps with its owner; online it is blocked.
 - Language: Hebrew for browsers that prefer Hebrew or clocks set to Israel, English
@@ -190,8 +232,8 @@ An authoritative server, the usual model for online games. Clients send only the
 input (left, straight, right); the server runs the simulation and broadcasts the state.
 Nobody can cheat from the browser, and everyone sees the same game.
 
-- Rooms: a 4-letter code. The share link carries the code in the URL hash. Up to 6
-  players, bots included.
+- Rooms: a 4-letter code. The share link carries the code in the URL hash (removed from
+  the address once joined). Up to 6 players, bots included.
 - Host: the creator. Only the host changes settings, adds bots and starts. If the host
   leaves, the role passes on.
 - Broadcast: 60 JSON snapshots a second with heads, power-ups, new trail segments
@@ -210,9 +252,12 @@ Nobody can cheat from the browser, and everyone sees the same game.
   at any speed and width, gaps, ghost, scoring, power-up targets, reversed keys, pickups,
   match target and 2-point lead, determinism with a seed, bot survival.
 - Rooms: joining, colours, limits, host rights, input, a full match with bots, reconnects.
-- Server: security headers, malformed URLs, only public files served, path traversal,
-  WebSocket origin check, junk and oversized messages, per-address connection cap.
-- Version: `js/config.js` matches `package.json`.
+- Server: security headers, the built page with no inline code, malformed URLs, only public
+  files served, path traversal, WebSocket origin check, junk and oversized messages,
+  per-address connection cap.
+- Version: `shared/config.js` matches `package.json`.
+
+`npm test` builds the site first, so the server tests run against the real `dist/`.
 
 UI changes are also checked in a real browser (Playwright): desktop and phone, Hebrew
 and English, no console errors.

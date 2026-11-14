@@ -1,6 +1,6 @@
 // Prepares a release on the dev branch:
 //   npm run bump -- patch|minor|major
-// Updates package.json, package-lock.json and js/config.js, and turns the
+// Updates package.json, package-lock.json and shared/config.js, and turns the
 // "Unreleased" section of CHANGELOG.md into the new version's section.
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -35,7 +35,7 @@ lock.version = next;
 if (lock.packages && lock.packages['']) lock.packages[''].version = next;
 await write('package-lock.json', JSON.stringify(lock, null, 2) + '\n');
 
-const config = await read('js/config.js');
-await write('js/config.js', config.replace(/export const VERSION = '[^']*';/, `export const VERSION = '${next}';`));
+const config = await read('shared/config.js');
+await write('shared/config.js', config.replace(/export const VERSION = '[^']*';/, `export const VERSION = '${next}';`));
 
 console.log(`Version ${next} is ready. Commit it as "Release v${next}" and merge dev into main.`);

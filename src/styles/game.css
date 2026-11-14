@@ -1,0 +1,83 @@
+/* Game: the scoreboard rail beside the arena on a wide screen. With the
+   "compact" class (small screens and touch devices) the rail becomes one strip
+   above the arena, and steering buttons sit below or beside the arena.
+   The arena canvas is sized by Arena.jsx to fill whatever room is left. */
+.game {
+  display: grid; gap: 20px; overflow: hidden;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "side arena";
+  user-select: none; -webkit-user-select: none;
+}
+.side { grid-area: side; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.brand { font-family: var(--display); font-size: 1.5rem; font-weight: 400; line-height: 1; letter-spacing: 0.04em; }
+.round-label { color: var(--muted); font-size: 0.875rem; }
+.side-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+
+.arena-wrap { grid-area: arena; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; touch-action: none; }
+.arena-box { position: relative; line-height: 0; flex: none; }
+.arena { display: block; width: 100%; height: 100%; }
+
+.count {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: clamp(4rem, 16vw, 9rem); line-height: 1;
+  color: var(--chalk); text-shadow: 0 0 30px rgba(10, 13, 28, 0.9); pointer-events: none;
+}
+.banner {
+  position: absolute; top: 14px; inset-inline: 0; margin-inline: auto; width: fit-content; max-width: 90%;
+  padding: 8px 18px; line-height: 1.4; text-align: center; pointer-events: none;
+  background: rgba(19, 24, 48, 0.92); border: 1px solid var(--line); border-radius: 6px;
+  font-family: var(--display); font-size: 1.2rem;
+}
+.banner small { display: block; font-family: var(--body); font-size: 0.8125rem; color: var(--muted); }
+
+/* ---------- Compact: one strip above the arena ---------- */
+.game.compact {
+  --gutter: 8px;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "side" "arena" "pads";
+}
+.game.compact .side { flex-direction: row; align-items: center; gap: 8px; }
+.game.compact .side-head, .game.compact .target { display: none; }
+.game.compact .side .scores { flex-direction: row; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.game.compact .side .scores::-webkit-scrollbar { display: none; }
+.game.compact .side .scores li { flex: none; grid-template-columns: 10px auto auto; gap: 6px; padding: 6px 10px; }
+.game.compact .side .scores .dot { width: 10px; height: 10px; }
+.game.compact .side .scores .who { max-width: 6.5em; font-size: 0.9375rem; }
+.game.compact .side .scores .pts { font-size: 1.125rem; line-height: 1.2; }
+.game.compact .side-actions { margin-top: 0; flex: none; }
+
+/* ---------- Touch steering ---------- */
+.pads { grid-area: pads; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; touch-action: none; }
+.pad { display: flex; gap: 6px; }
+.padbtn {
+  min-width: 68px; min-height: 64px; padding: 0;
+  background: color-mix(in srgb, var(--c) 10%, transparent); border: 2px solid var(--c); border-radius: 12px; color: var(--c);
+  font-size: 1.6rem; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.padbtn.on { background: var(--c); color: var(--ink); }
+
+/* One player on this device: two big thumb zones, below the arena when the
+   screen is upright and on both sides of it when the screen lies down. */
+.game.solo .pads, .game.solo .pad { display: contents; }
+.game.solo .padbtn { font-size: 2.2rem; min-width: 0; min-height: 0; }
+.game.solo .padbtn:first-child { grid-area: padL; }
+.game.solo .padbtn:last-child { grid-area: padR; }
+/* Grid columns mirror in RTL; the buttons must not. */
+[dir="rtl"] .game.solo .padbtn:first-child { grid-area: padR; }
+[dir="rtl"] .game.solo .padbtn:last-child { grid-area: padL; }
+.game.solo {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) clamp(88px, 16dvh, 150px);
+  grid-template-areas: "side side" "arena arena" "padL padR";
+}
+@media (orientation: landscape) {
+  .game.solo {
+    grid-template-columns: clamp(84px, 14vw, 140px) minmax(0, 1fr) clamp(84px, 14vw, 140px);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "padL side padR" "padL arena padR";
+  }
+}

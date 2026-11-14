@@ -1,0 +1,139 @@
+/* Shared look: colours, type, buttons, segmented controls, fields, dialogs.
+   Single dark look by choice. Logical properties throughout, so RTL and LTR
+   share the rules. Sizes grow on touch screens (pointer: coarse). */
+:root {
+  color-scheme: dark;
+  --ink: #0a0d1c;        /* page and arena ground */
+  --panel: #131830;      /* raised rows and controls */
+  --line: #283158;       /* hairlines and control borders */
+  --text: #e8ebff;
+  --muted: #8f97c2;
+  --chalk: #f3f1e7;      /* primary action */
+  --all: #4cc9f0;        /* focus ring */
+  --display: "Secular One", "Arial Hebrew", Arial, sans-serif;
+  --body: "Heebo", "Arial Hebrew", Arial, sans-serif;
+  --tap: 34px;           /* smallest height of a control */
+  --gutter: 20px;
+}
+@media (pointer: coarse) {
+  :root { --tap: 46px; }
+}
+@media (max-width: 640px) {
+  :root { --gutter: 14px; }
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.5;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.screen {
+  box-sizing: border-box;
+  height: 100%;
+  height: 100dvh;
+  overflow-y: auto;
+  padding-top: max(var(--gutter), env(safe-area-inset-top, 0px));
+  padding-bottom: max(var(--gutter), env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.25rem; }
+p { margin: 0; }
+button, input { font: inherit; color: inherit; }
+button { touch-action: manipulation; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--all); outline-offset: 2px; }
+
+.hint { color: var(--muted); font-size: 0.875rem; min-height: 1.3em; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  box-sizing: border-box; min-height: var(--tap);
+  background: transparent; border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 14px; cursor: pointer; font-weight: 500;
+}
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn.primary { background: var(--chalk); border-color: var(--chalk); color: var(--ink); font-weight: 700; }
+.btn.primary:hover:not(:disabled) { background: #ffffff; }
+.btn.big { font-family: var(--display); font-size: 1.35rem; padding: 12px 18px; min-height: 56px; }
+.btn.small { min-height: 0; padding: 4px 12px; font-size: 0.875rem; }
+.btn.icon { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; }
+
+/* ---------- Segmented control ---------- */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button {
+  box-sizing: border-box; min-height: calc(var(--tap) - 2px);
+  background: transparent; border: 0; padding: 4px 12px; cursor: pointer; color: var(--muted);
+  border-inline-start: 1px solid var(--line); white-space: nowrap;
+}
+.seg button:first-child { border-inline-start: 0; }
+.seg button:hover:not(:disabled) { color: var(--text); }
+.seg button[aria-pressed="true"] { background: var(--line); color: var(--text); font-weight: 700; opacity: 1; }
+
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.setting-name { font-weight: 500; }
+input[type="range"] { accent-color: var(--chalk); width: 170px; max-width: 100%; min-height: var(--tap); margin: 0; }
+
+/* ---------- Fields and colour swatches ---------- */
+.field {
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--tap);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; font-weight: 700;
+}
+.field::placeholder { color: var(--muted); font-weight: 400; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--c);
+  border: 3px solid var(--ink); box-shadow: 0 0 0 1px var(--line); padding: 0; cursor: pointer;
+}
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
+.swatch:disabled { opacity: 0.18; }
+@media (pointer: coarse) {
+  .swatches { gap: 10px; }
+  .swatch { width: 42px; height: 42px; }
+}
+
+/* ---------- Scoreboard (rail, strip and match end dialog) ---------- */
+.scores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.scores li {
+  display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 7px 10px; background: var(--panel); border-radius: 4px; border-inline-start: 4px solid var(--c);
+}
+.scores .dot { width: 12px; height: 12px; }
+.scores .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.scores .pts { font-family: var(--display); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.scores li.out .who { color: var(--muted); text-decoration: line-through; }
+.scores li.out .dot { background: transparent; box-shadow: inset 0 0 0 2px var(--c); }
+
+/* ---------- Dialogs sit above whichever screen is showing ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 20; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(10, 13, 28, 0.82);
+}
+.card {
+  display: flex; flex-direction: column; align-items: center; gap: 16px; box-sizing: border-box; width: min(420px, 100%); margin: auto; text-align: center;
+  padding: 24px 20px; background: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+}
+.card h2 { font-size: clamp(1.6rem, 5vw, 2.4rem); }
+.card p { color: var(--muted); }
+.card .scores, .dialog-rows { width: 100%; text-align: start; }
+.dialog-rows { display: flex; flex-direction: column; gap: 12px; }
+.overlay-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+/* On a phone the actions stack into full-width buttons, the main one first. */
+@media (max-width: 480px) {
+  .overlay-actions { flex-direction: column; align-self: stretch; }
+  .overlay-actions .btn { min-height: 50px; }
+}

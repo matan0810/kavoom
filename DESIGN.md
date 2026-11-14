@@ -25,6 +25,7 @@ The browser side is a React app, built by Vite into `dist/`. The Node server ser
 index.html               Vite entry page (loads src/main.jsx)
 public/                  files copied as they are: favicon.svg, icons/, manifest.webmanifest
 shared/config.js         constants: version, arena, physics, palette, keys, power-ups
+shared/protocol.js       the online wire format (server encodes, browser decodes)
 shared/sim/grid.js       occupancy grid for collisions
 shared/sim/round.js      one round: movement, collisions, gaps, power-ups, round points
 shared/sim/bot.js        computer player decisions
@@ -39,7 +40,8 @@ src/engine/              plain JavaScript, no React:
   backButton.js            browser Back button handling
   index.js                 the single game, input and sound objects
 src/state/               saved settings and the context that hands them to components
-src/hooks/               useGameUi, useOnlineRoom, useBackLayer, useAnimationFrame, useMediaQuery
+src/hooks/               useGameUi, useOnlineRoom, useBackLayer, useAnimationFrame, useMediaQuery,
+                         useWakeLock
 src/i18n/strings.js      Hebrew and English strings
 src/components/ui/       Segmented, Swatches, SettingRow, Dialog
 src/components/menu/     MenuScreen, Hero, TopBar, LocalPane, PlayerSlot, MatchSettings,
@@ -261,6 +263,7 @@ Nobody can cheat from the browser, and everyone sees the same game.
   knockout and match-end messages.
 - Back button (`tests/backbutton.test.js`): against a fake browser history: one entry per
   layer, Back closes the top layer, no double Back, sticky game layer, Forward undone.
+- Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode.
 - Layout and renderer: when the arena turns upright, and that the turn is a pure rotation.
 - Settings: bad saved values are replaced or clamped, language detection.
 - Version: `shared/config.js` matches `package.json`.

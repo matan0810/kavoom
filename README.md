@@ -14,6 +14,8 @@ Requires Node 22 or later.
 npm install
 npm run build      # React app -> dist/
 npm start          # http://localhost:8080
+npm run lint       # ESLint
+npm run format     # Prettier
 npm test           # builds, then runs every test
 npm run e2e        # browser smoke test; needs Playwright and a prior build
 ```

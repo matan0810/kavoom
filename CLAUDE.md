@@ -45,6 +45,7 @@ If `dev` is behind `main`, stop and tell the owner; that should never happen.
    it touches. Update `DESIGN.md` when a rule, number or behaviour changes.
 3. **Build** on `dev`, in small commits that each leave the tests green.
 4. **Test.** All of these, every time:
+   - `npm run lint` and `npm run format:check` pass (run `npm run format` to fix the layout).
    - `npm test` passes.
    - New logic gets a test: simulation in `tests/sim.test.js`, rooms in
      `tests/room.test.js`, HTTP or WebSocket behaviour in `tests/server.test.js`.
@@ -61,7 +62,7 @@ If `dev` is behind `main`, stop and tell the owner; that should never happen.
 
 ### Definition of done
 
-Tests green, browser checked when UI changed, CHANGELOG updated, DESIGN.md updated when
+Lint and format clean, tests green, browser checked when UI changed, CHANGELOG updated, DESIGN.md updated when
 behaviour changed, pushed to `dev`, CI green, owner told.
 
 ### Commits
@@ -143,7 +144,9 @@ CHANGELOG if it matters to players. Security updates are worth a `patch` release
 ```
 index.html, vite.config.js    Vite entry page and build settings
 public/                       copied as they are: favicon.svg, icons/, manifest.webmanifest
+eslint.config.js, .prettierrc.json   lint rules and code layout, enforced in CI
 shared/config.js              constants, VERSION, palette, power-ups, SERVER_URL
+shared/protocol.js            the online wire format: server encodes, browser decodes
 shared/sim/                   pure simulation (no DOM, no timers): round, grid, bot, match
 src/main.jsx, src/App.jsx     React entry and top component
 src/engine/                   no React: game.js (match state machine), renderer.js, input.js,
@@ -168,6 +171,8 @@ DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
   menu demo and the online server.
 - `src/engine/` must stay free of React. The match runs there; components only read
   `game.ui` (through `useGameUi`) and call engine methods.
+- Code layout is whatever Prettier produces; do not hand-format against it. Comments say
+  why, not what.
 - One component per file, named like the file. A component that grows past about 150 lines
   should be split.
 
@@ -178,6 +183,8 @@ DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
 - `npm run dev`: Vite dev server with instant reload on http://localhost:5173; run
   `npm start` beside it for online rooms
 - `npm test`: builds, then runs every test; must pass before any push
+- `npm run lint`: ESLint; must pass before any push (CI runs it)
+- `npm run format`: Prettier rewrites the files; `npm run format:check` only checks (CI runs it)
 - `npm run e2e`: browser smoke test (needs Playwright and a prior `npm run build`)
 - `npm run bump -- patch|minor|major`: prepare a release
 

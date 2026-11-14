@@ -37,6 +37,10 @@ test('names are cleaned and capped', () => {
   assert.equal(cleanName('  <b>abcdefghijklmnop'), 'babcdefghi');
   assert.equal(cleanName(''), 'Player');
   assert.equal(cleanName(null), 'Player');
+  assert.equal(cleanName({ toString: () => 'x' }), 'Player', 'only strings are names');
+  assert.equal(cleanName('ab\u202Ecd\u200B'), 'abcd', 'text-reordering and invisible characters are dropped');
+  assert.equal(cleanName('\u200B\u200F'), 'Player', 'an invisible name is no name');
+  assert.equal(cleanName('😀'.repeat(12)), '😀'.repeat(10), 'emoji are counted whole, never cut in half');
 });
 
 test('a room holds at most six, bots included', () => {
@@ -126,4 +130,30 @@ test('the host role moves on when the host leaves', () => {
   assert.equal(room.members.length, 0);
   room.tick(1);
   assert.ok(room.emptyFor > 0);
+});
+
+test('an old connection closing does not throw out a player who already came back', () => {
+  const room = new Room('TEST', 1);
+  const a = client();
+  const b = client();
+  const c = client();
+  room.add('A', 0, a.send);
+  const mb = room.add('B', 1, b.send);
+  room.handle(room.hostId, { t: 'start' });
+  // B's phone changes network: the new connection rejoins before the old one is noticed dead.
+  assert.ok(room.reconnect(b.last('joined').token, c.send));
+  room.disconnect(mb.id, b.send);
+  assert.equal(room.members.find((m) => m.id === mb.id).connected, true);
+  room.disconnect(mb.id, c.send);
+  assert.equal(room.members.find((m) => m.id === mb.id).connected, false);
+});
+
+test('setting keys that are not settings are ignored without an error', () => {
+  const room = new Room('TEST', 1);
+  const a = client();
+  room.add('A', 0, a.send);
+  for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    assert.doesNotThrow(() => room.handle(room.hostId, { t: 'set', key, val: 'x' }));
+  }
+  assert.deepEqual(room.settings, { length: 'normal', powerups: 'on', botLevel: 'medium' });
 });

@@ -7,6 +7,15 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Security
+- One address gets 30 attempts a minute to create or join a room, so room codes cannot be guessed in bulk.
+- A connection that stops reading is closed once 1 MB of game data is waiting for it, so it cannot exhaust the server's memory.
+- Names can no longer contain invisible or text-reordering characters used to imitate another player.
+- The content policy now names the site's own WebSocket address (needed by older Safari) and a same-origin resource policy header was added.
+
+### Fixed
+- Online: after a reconnect (for example a phone moving from Wi-Fi to mobile data), the old connection timing out no longer handed your line to a bot.
+
 ## [1.2.0] - 2026-11-14
 
 ### Added

@@ -138,3 +138,69 @@ test('one address cannot open unlimited connections', () =>
     assert.equal(open.length, 20);
     open.forEach((w) => w.close());
   }));
+
+test('the policy names the page\'s own WebSocket address, and ignores a strange Host', () =>
+  withServer(async (port) => {
+    const csp = (await get(port, '/')).headers['content-security-policy'];
+    assert.match(csp, new RegExp(`connect-src 'self' ws://127\\.0\\.0\\.1:${port} wss://127\\.0\\.0\\.1:${port};`));
+    const odd = await new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port, path: '/', headers: { Host: "evil.example; script-src *" } }, (res) => {
+        res.resume();
+        res.on('end', () => resolve(res.headers));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.match(odd['content-security-policy'], /connect-src 'self';/);
+    assert.match(odd['content-security-policy'], /script-src 'self';/);
+    assert.equal(odd['cross-origin-resource-policy'], 'same-origin');
+  }));
+
+test('guessing room codes is cut off after a number of tries', () =>
+  withServer(async (port) => {
+    const { ws } = await connect(port);
+    const answers = [];
+    ws.on('message', (d) => answers.push(JSON.parse(d).code));
+    for (let i = 0; i < 40; i++) ws.send(JSON.stringify({ t: 'join', code: 'ZZZZ' }));
+    await new Promise((r) => setTimeout(r, 150));
+    assert.equal(answers.length, 40);
+    assert.equal(answers.filter((c) => c === 'noroom').length, 30);
+    assert.equal(answers.filter((c) => c === 'busy').length, 10);
+    // Even a real room is out of reach until the minute is over.
+    ws.send(JSON.stringify({ t: 'create', name: 'A' }));
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(answers.at(-1), 'busy');
+    ws.close();
+  }));
+
+test('a player who rejoins keeps the seat when the old connection finally closes', () =>
+  withServer(async (port, app) => {
+    const a = (await connect(port)).ws;
+    const joinedA = nextMessage(a, 'joined');
+    a.send(JSON.stringify({ t: 'create', name: 'A' }));
+    const { code } = await joinedA;
+    const b = (await connect(port)).ws;
+    const joinedB = nextMessage(b, 'joined');
+    b.send(JSON.stringify({ t: 'join', code, name: 'B' }));
+    const { token, you } = await joinedB;
+    const started = nextMessage(b, 'round');
+    a.send(JSON.stringify({ t: 'start' }));
+    await started;
+
+    const b2 = (await connect(port)).ws; // B's new connection, while the old one is still open
+    const back = nextMessage(b2, 'joined');
+    b2.send(JSON.stringify({ t: 'rejoin', code, token }));
+    assert.equal((await back).you, you);
+
+    const room = app.rooms.get(code);
+    const seat = () => room.members.find((m) => m.id === you);
+    b.send(JSON.stringify({ t: 'input', d: 1 })); // the old connection no longer steers
+    b2.send(JSON.stringify({ t: 'input', d: -1 }));
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(seat().input, -1);
+    b.close();
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(seat().connected, true, 'still connected through the new connection');
+    a.close();
+    b2.close();
+  }));

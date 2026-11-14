@@ -14,8 +14,15 @@ const SETTINGS = { length: Object.keys(LENGTHS), powerups: ['on', 'off'], botLev
 
 const r1 = (v) => Math.round(v * 10) / 10;
 
+// Control characters, angle brackets, and the invisible characters that can
+// reorder or hide text (so a name cannot be made to look like another one).
+const UNSAFE_IN_NAME = /[\u0000-\u001f\u007f-\u009f<>\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g;
+const NAME_LENGTH = 10;
+
 export function cleanName(name) {
-  const s = String(name ?? '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 10);
+  const text = typeof name === 'string' ? name : '';
+  // Array.from counts whole characters, so an emoji is never cut in half.
+  const s = Array.from(text.replace(UNSAFE_IN_NAME, '').trim()).slice(0, NAME_LENGTH).join('').trim();
   return s || 'Player';
 }
 
@@ -82,9 +89,11 @@ export class Room {
 
   // A dropped connection. In the lobby the seat is freed; during a match it is
   // kept and a bot steers the line until the player comes back.
-  disconnect(id) {
+  // `send` is the connection that dropped. If the member has since come back on
+  // a newer connection, the old one closing must not throw them out.
+  disconnect(id, send) {
     const m = this.members.find((x) => x.id === id);
-    if (!m) return;
+    if (!m || (send && m.send !== send)) return;
     if (this.state === 'lobby') return this.remove(id);
     m.connected = false;
     m.send = null;
@@ -152,7 +161,7 @@ export class Room {
         m.color = msg.color;
         break;
       case 'set':
-        if (!host || !lobby || !SETTINGS[msg.key] || !SETTINGS[msg.key].includes(msg.val)) return;
+        if (!host || !lobby || !Object.hasOwn(SETTINGS, msg.key) || !SETTINGS[msg.key].includes(msg.val)) return;
         this.settings[msg.key] = msg.val;
         break;
       case 'addBot':

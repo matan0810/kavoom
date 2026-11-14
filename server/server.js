@@ -24,6 +24,8 @@ export const LIMITS = {
   connections: 1000, // open WebSockets on the server
   perIp: 20, // open WebSockets from one address
   messagesPerSecond: 200, // per connection; more closes it
+  joinsPerMinute: 30, // create / join / rejoin attempts from one address; stops code guessing
+  bufferedBytes: 1024 * 1024, // unsent data queued for one connection; more closes it
   idleLobbyMs: 30 * 60 * 1000, // a lobby member silent this long is disconnected
 };
 
@@ -43,24 +45,32 @@ const PUBLIC_DIRS = ['assets/', 'icons/'];
 // Files in assets/ carry a hash of their content in the name, so they never change.
 const CACHE_FOREVER = 'public, max-age=31536000, immutable';
 
-const SECURITY_HEADERS = {
-  'Content-Security-Policy': [
+// `host` is added to connect-src by name because older Safari does not count a
+// WebSocket to the page's own host as 'self'. It comes from the request, so it
+// is used only when it looks like a plain host name.
+function contentSecurityPolicy(host) {
+  const ownSocket = /^[a-z0-9.-]+(:\d{1,5})?$/i.test(host || '') ? ` ws://${host} wss://${host}` : '';
+  return [
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' https://fonts.googleapis.com",
     'font-src https://fonts.gstatic.com',
     "img-src 'self' data:",
-    "connect-src 'self'",
+    `connect-src 'self'${ownSocket}`,
     "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
     "frame-ancestors 'none'",
-  ].join('; '),
+  ].join('; ');
+}
+
+const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
   'X-Frame-Options': 'DENY',
   'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
 };
 
@@ -103,7 +113,16 @@ function originAllowed(req, extra) {
 
 export function startServer({ port = 8080, allowedOrigins = [], log = console.log } = {}) {
   const rooms = new Map();
-  const perIp = new Map();
+  const perIp = new Map(); // address -> open connections
+  const joins = new Map(); // address -> { count, since } for the current minute
+
+  // True while this address may still try to create or join a room this minute.
+  const mayJoin = (ip) => {
+    const now = Date.now();
+    let j = joins.get(ip);
+    if (!j || now - j.since > 60000) joins.set(ip, (j = { count: 0, since: now }));
+    return ++j.count <= LIMITS.joinsPerMinute;
+  };
 
   const newCode = () => {
     for (;;) {
@@ -116,7 +135,11 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
   const server = http.createServer(async (req, res) => {
     try {
       const secure = req.headers['x-forwarded-proto'] === 'https';
-      const headers = { ...SECURITY_HEADERS, ...(secure ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}) };
+      const headers = {
+        ...SECURITY_HEADERS,
+        'Content-Security-Policy': contentSecurityPolicy(req.headers.host),
+        ...(secure ? { 'Strict-Transport-Security': 'max-age=31536000' } : {}),
+      };
       if (req.method !== 'GET' && req.method !== 'HEAD') return res.writeHead(405, headers).end();
       const urlPath = (req.url || '/').split('?')[0];
       if (urlPath === '/healthz') return res.writeHead(200, headers).end('ok');
@@ -164,7 +187,10 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
     ws.on('error', () => {});
 
     const send = (s) => {
-      if (ws.readyState === 1) ws.send(s);
+      if (ws.readyState !== 1) return;
+      // A client that stopped reading must not make the server hoard its snapshots.
+      if (ws.bufferedAmount > LIMITS.bufferedBytes) return ws.terminate();
+      ws.send(s);
     };
     const fail = (code) => send(JSON.stringify({ t: 'error', code }));
     const enter = (r, m) => {
@@ -191,21 +217,25 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
       if (!msg || typeof msg !== 'object' || typeof msg.t !== 'string') return;
 
       try {
+        // This member has rejoined on a newer connection: this one is no longer theirs.
+        if (member && member.send !== send) room = member = null;
         if (member) {
           room.handle(member.id, msg);
           if (msg.t === 'leave') room = member = null;
           return;
         }
-        const code = String(msg.code || '').toUpperCase();
+        if (!['create', 'join', 'rejoin'].includes(msg.t)) return;
+        if (!mayJoin(ip)) return fail('busy');
+        const code = typeof msg.code === 'string' ? msg.code.toUpperCase() : '';
         if (msg.t === 'create') {
           if (rooms.size >= LIMITS.rooms) return fail('busy');
           const r = new Room(newCode());
           rooms.set(r.code, r);
           enter(r, r.add(msg.name, msg.color, send));
-        } else if (msg.t === 'join' || msg.t === 'rejoin') {
+        } else {
           const r = rooms.get(code);
           if (!r) return fail('noroom');
-          const back = msg.t === 'rejoin' ? r.reconnect(String(msg.token || ''), send) : null;
+          const back = msg.t === 'rejoin' && typeof msg.token === 'string' ? r.reconnect(msg.token, send) : null;
           enter(r, back || r.add(msg.name, msg.color, send));
         }
       } catch (e) {
@@ -218,7 +248,7 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
       if (left > 0) perIp.set(ip, left);
       else perIp.delete(ip);
       try {
-        if (member) room.disconnect(member.id);
+        if (member) room.disconnect(member.id, send);
       } catch (e) {
         log('disconnect failed:', e.message);
       }
@@ -247,6 +277,7 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
   // Drop connections that stopped answering pings, and lobby members who went quiet.
   const sweep = setInterval(() => {
     const now = Date.now();
+    for (const [ip, j] of joins) if (now - j.since > 60000) joins.delete(ip);
     for (const ws of wss.clients) {
       if (!ws.isAlive || (ws.inLobby() && now - ws.lastMsg > LIMITS.idleLobbyMs)) {
         ws.terminate();

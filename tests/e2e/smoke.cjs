@@ -22,7 +22,10 @@ async function main() {
   const browser = await chromium.launch();
   const problems = [];
   const watch = (page, tag) => {
-    page.on('console', (m) => ['error', 'warning'].includes(m.type()) && problems.push(`${tag}: ${m.text()}`));
+    page.on(
+      'console',
+      (m) => ['error', 'warning'].includes(m.type()) && problems.push(`${tag}: ${m.text()}`),
+    );
     page.on('pageerror', (e) => problems.push(`${tag}: ${e.message}`));
   };
   const open = async (opts, tag) => {
@@ -37,8 +40,18 @@ async function main() {
   await phone.goto(url);
   await settle(phone, 600);
   assert.equal(await phone.evaluate(() => document.documentElement.dir), 'rtl');
-  assert.ok(await phone.evaluate(() => document.querySelector('.menu').scrollWidth <= document.querySelector('.menu').clientWidth), 'menu has no sideways scroll');
-  const small = await phone.evaluate(() => [...document.querySelectorAll('.btn, .seg button, .tabs button')].filter((b) => b.offsetParent && b.getBoundingClientRect().height < 40).map((b) => b.textContent));
+  assert.ok(
+    await phone.evaluate(
+      () =>
+        document.querySelector('.menu').scrollWidth <= document.querySelector('.menu').clientWidth,
+    ),
+    'menu has no sideways scroll',
+  );
+  const small = await phone.evaluate(() =>
+    [...document.querySelectorAll('.btn, .seg button, .tabs button')]
+      .filter((b) => b.offsetParent && b.getBoundingClientRect().height < 40)
+      .map((b) => b.textContent),
+  );
   assert.deepEqual(small, [], 'every menu button is a comfortable tap target');
   step('phone menu: fits the width, big buttons');
 
@@ -49,8 +62,15 @@ async function main() {
     return { w: c.width, h: c.height, vh: innerHeight, vw: innerWidth };
   });
   assert.ok(box.h > box.w, 'the arena stands up on an upright phone');
-  assert.ok(box.h > box.vh * 0.55, `the arena uses most of the height (${Math.round(box.h)} of ${box.vh})`);
-  assert.equal(await phone.$$eval('.side-actions .btn', (n) => n.length), 1, 'one menu button on small screens');
+  assert.ok(
+    box.h > box.vh * 0.55,
+    `the arena uses most of the height (${Math.round(box.h)} of ${box.vh})`,
+  );
+  assert.equal(
+    await phone.$$eval('.side-actions .btn', (n) => n.length),
+    1,
+    'one menu button on small screens',
+  );
   assert.equal(await phone.$$eval('.padbtn', (n) => n.length), 2, 'two thumb buttons');
   assert.equal(await phone.evaluate(() => window.__kavoom.game.ui.state), 'playing');
   step('phone game: tall arena, one menu button, thumb pads');
@@ -63,7 +83,11 @@ async function main() {
   await phone.goBack();
   await settle(phone);
   assert.equal(await phone.$('.card'), null, 'a second Back closes the dialog');
-  assert.equal(await phone.evaluate(() => window.__kavoom.game.ui.state), 'playing', 'and the match is still on');
+  assert.equal(
+    await phone.evaluate(() => window.__kavoom.game.ui.state),
+    'playing',
+    'and the match is still on',
+  );
   assert.equal(await phone.evaluate(() => location.pathname), '/', 'we never left the page');
   await phone.goBack();
   await settle(phone);
@@ -98,10 +122,17 @@ async function main() {
   await settle(land, 800);
   const l = await land.evaluate(() => {
     const r = (s) => document.querySelector(s).getBoundingClientRect();
-    return { arena: r('canvas.arena'), left: r('.padbtn:first-child'), right: r('.padbtn:last-child') };
+    return {
+      arena: r('canvas.arena'),
+      left: r('.padbtn:first-child'),
+      right: r('.padbtn:last-child'),
+    };
   });
   assert.ok(l.arena.width > l.arena.height, 'lying down in landscape');
-  assert.ok(l.left.right <= l.arena.left + 2 && l.right.left >= l.arena.right - 2, 'pads sit on both sides');
+  assert.ok(
+    l.left.right <= l.arena.left + 2 && l.right.left >= l.arena.right - 2,
+    'pads sit on both sides',
+  );
   step('landscape phone: arena between two pads');
 
   // ---------- Desktop, both languages ----------
@@ -111,7 +142,11 @@ async function main() {
     await settle(d, 500);
     await d.click('.start-bar .btn');
     await settle(d, 4200);
-    assert.equal(await d.$$eval('.side-actions .btn', (n) => n.length), 3, 'rail with pause, settings, menu');
+    assert.equal(
+      await d.$$eval('.side-actions .btn', (n) => n.length),
+      3,
+      'rail with pause, settings, menu',
+    );
     await d.keyboard.press('Space');
     await settle(d, 250);
     assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true);
@@ -140,8 +175,15 @@ async function main() {
   assert.equal(await guest.inputValue('.field.code'), code, 'the shared link fills in the code');
   await guest.click('.join-row .btn');
   await guest.waitForSelector('.room-code');
-  assert.equal(await guest.evaluate(() => location.hash), '', 'the code leaves the address once joined');
-  assert.deepEqual(await host.$$eval('.member .who', (n) => n.map((x) => x.textContent)), ['Dana (You)', 'שחקן']);
+  assert.equal(
+    await guest.evaluate(() => location.hash),
+    '',
+    'the code leaves the address once joined',
+  );
+  assert.deepEqual(await host.$$eval('.member .who', (n) => n.map((x) => x.textContent)), [
+    'Dana (You)',
+    'שחקן',
+  ]);
   step('online: create, join through the link, both see each other');
 
   await host.click('.room-actions .btn.primary');
@@ -149,7 +191,10 @@ async function main() {
   await settle(guest, 3500);
   assert.equal(await guest.evaluate(() => window.__kavoom.game.ui.state), 'playing');
   assert.equal(await guest.evaluate(() => window.__kavoom.game.myIndex), 1);
-  assert.ok(await guest.evaluate(() => window.__kavoom.game.view.players.length === 2), 'snapshots arrive');
+  assert.ok(
+    await guest.evaluate(() => window.__kavoom.game.view.players.length === 2),
+    'snapshots arrive',
+  );
   step('online: both in the match, snapshots arriving');
 
   await guest.goBack(); // leave dialog
@@ -158,7 +203,11 @@ async function main() {
   await guest.goBack();
   await settle(guest);
   assert.equal(await guest.$('.card'), null);
-  assert.equal(await guest.evaluate(() => window.__kavoom.game.ui.state), 'playing', 'the match went on');
+  assert.equal(
+    await guest.evaluate(() => window.__kavoom.game.ui.state),
+    'playing',
+    'the match went on',
+  );
   await guest.goBack();
   await settle(guest);
   await guest.click('.overlay-actions .btn:last-child'); // leave room
@@ -183,7 +232,10 @@ async function main() {
   step('no console errors or CSP violations');
 }
 
-main().then(() => process.exit(0), (e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().then(
+  () => process.exit(0),
+  (e) => {
+    console.error(e);
+    process.exit(1);
+  },
+);

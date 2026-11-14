@@ -13,18 +13,44 @@ function MatchEnd({ ui, online }) {
   const hostCanStart = !local && online.isHost;
   const toMenu = () => game.stop(); // online this lands back in the room
   let actions;
-  if (local) actions = [{ label: t('rematch'), onClick: () => game.rematch(), primary: true }, { label: t('mainMenu'), onClick: toMenu }];
-  else if (hostCanStart) actions = [{ label: t('rematch'), onClick: () => online.send({ t: 'start' }), primary: true }, { label: t('backToRoom'), onClick: toMenu }];
+  if (local)
+    actions = [
+      { label: t('rematch'), onClick: () => game.rematch(), primary: true },
+      { label: t('mainMenu'), onClick: toMenu },
+    ];
+  else if (hostCanStart)
+    actions = [
+      { label: t('rematch'), onClick: () => online.send({ t: 'start' }), primary: true },
+      { label: t('backToRoom'), onClick: toMenu },
+    ];
   else actions = [{ label: t('backToRoom'), onClick: toMenu, primary: true }];
-  const text = t('afterRounds', ui.result.rounds) + (!local && !hostCanStart ? `. ${t('hostCanRematch')}` : '');
+  const text =
+    t('afterRounds', ui.result.rounds) +
+    (!local && !hostCanStart ? `. ${t('hostCanRematch')}` : '');
   return (
-    <Dialog title={t('wonMatch', ui.players[ui.result.champion].name)} text={text} actions={actions} onClose={toMenu} escCloses={false}>
+    <Dialog
+      title={t('wonMatch', ui.players[ui.result.champion].name)}
+      text={text}
+      actions={actions}
+      onClose={toMenu}
+      escCloses={false}
+    >
       <Scoreboard players={ui.players} />
     </Dialog>
   );
 }
 
-export function GameDialogs({ ui, dialog, online, showKeysHint, withSettings, onResume, onSettings, onCloseSettings, onLeave }) {
+export function GameDialogs({
+  ui,
+  dialog,
+  online,
+  showKeysHint,
+  withSettings,
+  onResume,
+  onSettings,
+  onCloseSettings,
+  onLeave,
+}) {
   const t = useT();
   const local = ui.mode === 'local';
   const settingsAction = { label: t('moreSettings'), onClick: onSettings };
@@ -38,7 +64,11 @@ export function GameDialogs({ ui, dialog, online, showKeysHint, withSettings, on
         title={t('paused')}
         text={showKeysHint ? t('pausedText') : undefined}
         onClose={onResume}
-        actions={[{ label: t('resume'), onClick: onResume, primary: true }, settingsAction, { label: t('mainMenu'), onClick: onLeave }]}
+        actions={[
+          { label: t('resume'), onClick: onResume, primary: true },
+          settingsAction,
+          { label: t('mainMenu'), onClick: onLeave },
+        ]}
       />
     );
   }

@@ -12,11 +12,24 @@ const { Game } = await import('../src/engine/game.js');
 
 const quiet = new Proxy({}, { get: () => () => {} });
 function makeInput() {
-  const input = { dir: 0, pad: 0, keys: () => input.dir, touchDir: () => 0, padDir: () => input.pad };
+  const input = {
+    dir: 0,
+    pad: 0,
+    keys: () => input.dir,
+    touchDir: () => 0,
+    padDir: () => input.pad,
+  };
   return input;
 }
-const bots = (n) => Array.from({ length: n }, (_, i) => ({ name: `B${i}`, color: '#fff', human: false, keys: [] }));
-const setup = (players, extra = {}) => ({ players, botLevel: 'medium', powerups: false, length: 'short', ...extra });
+const bots = (n) =>
+  Array.from({ length: n }, (_, i) => ({ name: `B${i}`, color: '#fff', human: false, keys: [] }));
+const setup = (players, extra = {}) => ({
+  players,
+  botLevel: 'medium',
+  powerups: false,
+  length: 'short',
+  ...extra,
+});
 
 // Advance the game by `seconds` of frames. Returns the number of frames used.
 function run(game, seconds, dt = 0.05) {
@@ -28,10 +41,15 @@ function run(game, seconds, dt = 0.05) {
 test('a new local match counts down, then plays', () => {
   const game = new Game({ input: makeInput(), sfx: quiet });
   assert.equal(game.ui.state, 'idle');
-  game.startLocal(setup([{ name: 'Ann', color: '#f00', human: true, keys: ['KeyA', 'KeyD'] }, ...bots(2)]));
+  game.startLocal(
+    setup([{ name: 'Ann', color: '#f00', human: true, keys: ['KeyA', 'KeyD'] }, ...bots(2)]),
+  );
   assert.equal(game.ui.state, 'countdown');
   assert.equal(game.ui.mode, 'local');
-  assert.deepEqual(game.ui.players.map((p) => p.name), ['Ann', 'B0', 'B1']);
+  assert.deepEqual(
+    game.ui.players.map((p) => p.name),
+    ['Ann', 'B0', 'B1'],
+  );
   assert.deepEqual(game.ui.padOwners, [0], 'only the human gets touch buttons');
   assert.equal(game.ui.roundNo, 1);
   run(game, 1);
@@ -65,7 +83,9 @@ test('pausing freezes the round and resuming continues it', () => {
 test('a human steers with keys and with the touch buttons', () => {
   const input = makeInput();
   const game = new Game({ input, sfx: quiet });
-  game.startLocal(setup([{ name: 'Ann', color: '#f00', human: true, keys: ['KeyA', 'KeyD'] }, ...bots(1)]));
+  game.startLocal(
+    setup([{ name: 'Ann', color: '#f00', human: true, keys: ['KeyA', 'KeyD'] }, ...bots(1)]),
+  );
   run(game, 3);
   input.dir = 1;
   game.frame(0.05);
@@ -90,11 +110,17 @@ test('a bot-only match runs round after round to a winner, and a rematch starts 
   assert.ok(champion === 0 || champion === 1);
   assert.ok(rounds >= 5, 'a short match is at least 5 rounds');
   const scores = game.ui.players.map((p) => p.score);
-  assert.ok(scores[champion] >= 5 && scores[champion] - scores[1 - champion] >= 2, 'target reached with a lead of 2');
+  assert.ok(
+    scores[champion] >= 5 && scores[champion] - scores[1 - champion] >= 2,
+    'target reached with a lead of 2',
+  );
 
   game.rematch();
   assert.equal(game.ui.state, 'countdown');
-  assert.deepEqual(game.ui.players.map((p) => p.score), [0, 0]);
+  assert.deepEqual(
+    game.ui.players.map((p) => p.score),
+    [0, 0],
+  );
   assert.equal(game.ui.result, null);
   game.stop();
   assert.equal(game.ui.state, 'idle');
@@ -125,12 +151,33 @@ test('the pause button is a local-only thing', () => {
 // ---------- online ----------
 
 function roundMsg(extra = {}) {
-  return { t: 'round', order: [7, 9], names: ['Me', 'Them'], colors: [0, 5], scores: [0, 0], target: 5, roundNo: 1, segs: [], ...extra };
+  return {
+    t: 'round',
+    order: [7, 9],
+    names: ['Me', 'Them'],
+    colors: [0, 5],
+    scores: [0, 0],
+    target: 5,
+    roundNo: 1,
+    segs: [],
+    ...extra,
+  };
 }
 const player = (x, y, alive = 1) => [x, y, 0, alive, 3, 0];
-const snap = (extra = {}) => ({ t: 's', ph: 'p', cd: 0, p: [player(100, 100), player(300, 200)], it: [], wr: 0, g: [], e: [], pts: [0, 0], ...extra });
+const snap = (extra = {}) => ({
+  t: 's',
+  ph: 'p',
+  cd: 0,
+  p: [player(100, 100), player(300, 200)],
+  it: [],
+  wr: 0,
+  g: [],
+  e: [],
+  pts: [0, 0],
+  ...extra,
+});
 
-test('an online round finds this device\'s player and follows the server\'s snapshots', () => {
+test("an online round finds this device's player and follows the server's snapshots", () => {
   const sent = [];
   const input = makeInput();
   const game = new Game({ input, sfx: quiet });
@@ -139,7 +186,10 @@ test('an online round finds this device\'s player and follows the server\'s snap
   assert.equal(game.ui.mode, 'online');
   assert.equal(game.myIndex, 1);
   assert.deepEqual(game.ui.padOwners, [1]);
-  assert.deepEqual(game.ui.players.map((p) => p.name), ['Me', 'Them']);
+  assert.deepEqual(
+    game.ui.players.map((p) => p.name),
+    ['Me', 'Them'],
+  );
 
   game.onlineSnapshot(snap({ ph: 'c', cd: 2 }));
   assert.equal(game.ui.state, 'countdown');
@@ -154,14 +204,19 @@ test('an online round finds this device\'s player and follows the server\'s snap
   game.frame(0.016);
   input.dir = 0;
   game.frame(0.016);
-  assert.deepEqual(sent, [{ t: 'input', d: -1 }, { t: 'input', d: 0 }]);
+  assert.deepEqual(sent, [
+    { t: 'input', d: -1 },
+    { t: 'input', d: 0 },
+  ]);
 });
 
 test('an online knockout strikes the player out of the scoreboard', () => {
   const game = new Game({ input: makeInput(), sfx: quiet });
   game.onlineRound(roundMsg(), 7);
   game.onlineSnapshot(snap());
-  game.onlineSnapshot(snap({ p: [player(100, 100), player(300, 200, 0)], e: [['d', 1, 300, 200]], pts: [1, 0] }));
+  game.onlineSnapshot(
+    snap({ p: [player(100, 100), player(300, 200, 0)], e: [['d', 1, 300, 200]], pts: [1, 0] }),
+  );
   assert.equal(game.ui.players[1].out, true);
   assert.equal(game.ui.players[0].score, 1, 'a live point counts at once');
 });

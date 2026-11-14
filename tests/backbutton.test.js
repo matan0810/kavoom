@@ -13,9 +13,17 @@ function fakeBrowser(entries = [null]) {
   const listeners = [];
   const fire = () => listeners.forEach((fn) => fn({ state: stack[index].state }));
   globalThis.history = {
-    get state() { return stack[index].state; },
-    pushState(state) { stack.splice(index + 1); stack.push({ state }); index++; },
-    replaceState(state) { stack[index].state = state; },
+    get state() {
+      return stack[index].state;
+    },
+    pushState(state) {
+      stack.splice(index + 1);
+      stack.push({ state });
+      index++;
+    },
+    replaceState(state) {
+      stack[index].state = state;
+    },
     go(n) {
       const to = index + n;
       if (to < 0 || to >= stack.length) return;
@@ -27,8 +35,12 @@ function fakeBrowser(entries = [null]) {
   return {
     back: () => globalThis.history.go(-1),
     forward: () => globalThis.history.go(1),
-    get index() { return index; },
-    get length() { return stack.length; },
+    get index() {
+      return index;
+    },
+    get length() {
+      return stack.length;
+    },
   };
 }
 

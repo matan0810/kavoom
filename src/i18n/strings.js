@@ -4,7 +4,10 @@
 const one = (n, he1, he, en1, en) => ({ he: n === 1 ? he1 : he, en: n === 1 ? en1 : en });
 
 const STRINGS = {
-  tagline: { he: 'משאירים קו. לא נוגעים בכלום. האחרון שנשאר מנצח.', en: 'Leave a line. Touch nothing. Last one alive wins.' },
+  tagline: {
+    he: 'משאירים קו. לא נוגעים בכלום. האחרון שנשאר מנצח.',
+    en: 'Leave a line. Touch nothing. Last one alive wins.',
+  },
   tabLocal: { he: 'מכשיר אחד', en: 'One device' },
   tabOnline: { he: 'אונליין', en: 'Online' },
   players: { he: 'משתתפים', en: 'Players' },
@@ -23,12 +26,27 @@ const STRINGS = {
   auto: { he: 'אוטומטי', en: 'Auto' },
   start: { he: 'התחל משחק', en: 'Start game' },
   needTwo: { he: 'צריך לפחות שני משתתפים.', en: 'At least two players are needed.' },
-  startHint: (n, target) => ({ he: `${n} משתתפים, עד ${target} נקודות בהפרש 2.`, en: `${n} players, first to ${target}, win by 2.` }),
+  startHint: (n, target) => ({
+    he: `${n} משתתפים, עד ${target} נקודות בהפרש 2.`,
+    en: `${n} players, first to ${target}, win by 2.`,
+  }),
   howTitle: { he: 'איך משחקים', en: 'How to play' },
-  how1: { he: 'לכל שחקן שני מקשים: שמאלה וימינה. הקו לא עוצר.', en: 'Each player has two keys: left and right. The line never stops.' },
-  how2: { he: 'בשובל נפתחים חורים, ואפשר לעבור דרכם.', en: 'Gaps open in every trail, and you can slip through them.' },
-  how3: { he: 'כל פסילה נותנת נקודה לכל מי שעדיין במשחק.', en: 'Every crash gives a point to everyone still alive.' },
-  how4: { he: 'בונוס ירוק משפיע עליך, אדום על היריבים, כחול על כולם.', en: 'Green power-ups affect you, red ones your rivals, blue ones everyone.' },
+  how1: {
+    he: 'לכל שחקן שני מקשים: שמאלה וימינה. הקו לא עוצר.',
+    en: 'Each player has two keys: left and right. The line never stops.',
+  },
+  how2: {
+    he: 'בשובל נפתחים חורים, ואפשר לעבור דרכם.',
+    en: 'Gaps open in every trail, and you can slip through them.',
+  },
+  how3: {
+    he: 'כל פסילה נותנת נקודה לכל מי שעדיין במשחק.',
+    en: 'Every crash gives a point to everyone still alive.',
+  },
+  how4: {
+    he: 'בונוס ירוק משפיע עליך, אדום על היריבים, כחול על כולם.',
+    en: 'Green power-ups affect you, red ones your rivals, blue ones everyone.',
+  },
   modeOff: { he: 'כבוי', en: 'Off' },
   modeHuman: { he: 'שחקן', en: 'Player' },
   modeBot: { he: 'בוט', en: 'Bot' },
@@ -60,14 +78,18 @@ const STRINGS = {
   keepPlaying: { he: 'המשך לשחק', en: 'Keep playing' },
   quitYes: { he: 'צא לתפריט', en: 'Quit to menu' },
   leaveTitle: { he: 'לעזוב את החדר?', en: 'Leave the room?' },
-  leaveText: { he: 'בוט ינהג בקו שלך עד סוף המשחק.', en: 'A bot will steer your line for the rest of the match.' },
+  leaveText: {
+    he: 'בוט ינהג בקו שלך עד סוף המשחק.',
+    en: 'A bot will steer your line for the rest of the match.',
+  },
   leaveYes: { he: 'עזוב חדר', en: 'Leave room' },
   roundOf: (name) => ({ he: `הסיבוב של ${name}`, en: `${name} takes the round` }),
   draw: { he: 'תיקו, אף אחד לא שרד', en: 'Draw. Nobody survived' },
   spaceNext: { he: 'רווח לסיבוב הבא', en: 'Space for the next round' },
   nextSoon: { he: 'הסיבוב הבא מתחיל מיד', en: 'Next round starts in a moment' },
   wonMatch: (name) => ({ he: `${name} ניצח במשחק`, en: `${name} wins the match` }),
-  afterRounds: (n) => one(n, 'אחרי סיבוב אחד', `אחרי ${n} סיבובים`, 'After 1 round', `After ${n} rounds`),
+  afterRounds: (n) =>
+    one(n, 'אחרי סיבוב אחד', `אחרי ${n} סיבובים`, 'After 1 round', `After ${n} rounds`),
   rematch: { he: 'משחק חוזר', en: 'Rematch' },
   backToRoom: { he: 'חזרה לחדר', en: 'Back to room' },
   hostCanRematch: { he: 'המארח יכול להתחיל משחק חוזר.', en: 'The host can start a rematch.' },
@@ -89,11 +111,17 @@ const STRINGS = {
   connecting: { he: 'מתחבר…', en: 'Connecting…' },
   reconnecting: { he: 'החיבור נפל, מתחבר מחדש…', en: 'Connection lost, reconnecting…' },
   lost: { he: 'החיבור לשרת אבד.', en: 'Lost connection to the server.' },
-  noServer: { he: 'אין חיבור לשרת המשחק. אונליין עובד רק כשהמשחק רץ מהשרת שלו.', en: 'Cannot reach the game server. Online play works only when the game runs from its own server.' },
+  noServer: {
+    he: 'אין חיבור לשרת המשחק. אונליין עובד רק כשהמשחק רץ מהשרת שלו.',
+    en: 'Cannot reach the game server. Online play works only when the game runs from its own server.',
+  },
   errNoroom: { he: 'לא נמצא חדר עם הקוד הזה.', en: 'No room with that code.' },
   errFull: { he: 'החדר מלא.', en: 'The room is full.' },
   errBusy: { he: 'השרת עמוס כרגע.', en: 'The server is busy right now.' },
-  onlineKeys: { he: 'במקלדת: ← → או A D. בטלפון: כפתורי מגע.', en: 'Keyboard: ← → or A D. Phone: touch buttons.' },
+  onlineKeys: {
+    he: 'במקלדת: ← → או A D. בטלפון: כפתורי מגע.',
+    en: 'Keyboard: ← → or A D. Phone: touch buttons.',
+  },
 };
 
 export function translate(lang, key, ...args) {

@@ -22,7 +22,9 @@ function PadButton({ player, side, name }) {
         set(true);
         try {
           e.currentTarget.setPointerCapture(e.pointerId);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }}
       onPointerUp={() => set(false)}
       onPointerCancel={() => set(false)}

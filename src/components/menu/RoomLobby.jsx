@@ -12,14 +12,31 @@ function CopyLink({ code }) {
   const link = `${location.origin}${location.pathname}#${code}`;
   const copy = () => {
     try {
-      navigator.clipboard.writeText(link).then(() => setState('copied'), () => setState('manual'));
+      navigator.clipboard.writeText(link).then(
+        () => setState('copied'),
+        () => setState('manual'),
+      );
     } catch {
       setState('manual');
     }
   };
   // No clipboard access: show the link so it can be copied by hand.
-  if (state === 'manual') return <input className="field" dir="ltr" readOnly value={link} autoFocus onFocus={(e) => e.target.select()} />;
-  return <button type="button" className="btn" onClick={copy}>{t(state === 'copied' ? 'copied' : 'copyLink')}</button>;
+  if (state === 'manual')
+    return (
+      <input
+        className="field"
+        dir="ltr"
+        readOnly
+        value={link}
+        autoFocus
+        onFocus={(e) => e.target.select()}
+      />
+    );
+  return (
+    <button type="button" className="btn" onClick={copy}>
+      {t(state === 'copied' ? 'copied' : 'copyLink')}
+    </button>
+  );
 }
 
 function Member({ member, room, online }) {
@@ -29,12 +46,23 @@ function Member({ member, room, online }) {
   if (member.id === room.host) tag = <span className="tag">{t('host')}</span>;
   else if (!member.on) tag = <span className="tag">{t('away')}</span>;
   else if (member.bot && online.isHost && room.state === 'lobby') {
-    tag = <button type="button" className="btn small" onClick={() => online.send({ t: 'removeBot', id: member.id })}>{t('remove')}</button>;
+    tag = (
+      <button
+        type="button"
+        className="btn small"
+        onClick={() => online.send({ t: 'removeBot', id: member.id })}
+      >
+        {t('remove')}
+      </button>
+    );
   } else if (member.bot) tag = <span className="tag">{t('modeBot')}</span>;
   return (
     <li className="member" style={{ '--c': PALETTE[member.color].hex }}>
       <span className="dot" />
-      <span className="who">{member.name}{isYou ? ` (${t('you')})` : ''}</span>
+      <span className="who">
+        {member.name}
+        {isYou ? ` (${t('you')})` : ''}
+      </span>
       {tag}
     </li>
   );
@@ -49,15 +77,26 @@ export function RoomLobby({ online }) {
   return (
     <>
       <div className="room-head">
-        <h2>{t('room', '')}<span className="room-code" dir="ltr">{room.code}</span></h2>
+        <h2>
+          {t('room', '')}
+          <span className="room-code" dir="ltr">
+            {room.code}
+          </span>
+        </h2>
         <CopyLink code={room.code} />
       </div>
 
       <ul className="slots">
-        {room.members.map((m) => <Member key={m.id} member={m} room={room} online={online} />)}
+        {room.members.map((m) => (
+          <Member key={m.id} member={m} room={room} online={online} />
+        ))}
       </ul>
 
-      <MatchSettings values={room.settings} disabled={!isHost || !inLobby} onChange={(key, val) => online.send({ t: 'set', key, val })} />
+      <MatchSettings
+        values={room.settings}
+        disabled={!isHost || !inLobby}
+        onChange={(key, val) => online.send({ t: 'set', key, val })}
+      />
 
       {!inLobby && <p className="hint">{t('matchRunning')}</p>}
       {inLobby && !isHost && <p className="hint">{t('waitingHost')}</p>}
@@ -66,11 +105,27 @@ export function RoomLobby({ online }) {
       <div className="room-actions">
         {inLobby && isHost && (
           <>
-            <button type="button" className="btn primary" disabled={count < 2} onClick={() => online.send({ t: 'start' })}>{t('start')}</button>
-            <button type="button" className="btn" disabled={count >= MAX_PLAYERS} onClick={() => online.send({ t: 'addBot' })}>{t('addBot')}</button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={count < 2}
+              onClick={() => online.send({ t: 'start' })}
+            >
+              {t('start')}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={count >= MAX_PLAYERS}
+              onClick={() => online.send({ t: 'addBot' })}
+            >
+              {t('addBot')}
+            </button>
           </>
         )}
-        <button type="button" className="btn" onClick={() => online.leave()}>{t('leaveYes')}</button>
+        <button type="button" className="btn" onClick={() => online.leave()}>
+          {t('leaveYes')}
+        </button>
       </div>
     </>
   );

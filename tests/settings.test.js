@@ -4,17 +4,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 function setEnv({ stored, languages = ['en-US'], zone = 'Europe/London' } = {}) {
-  Object.defineProperty(globalThis, 'navigator', { value: { languages, language: languages[0] }, configurable: true });
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { languages, language: languages[0] },
+    configurable: true,
+  });
   Object.defineProperty(globalThis, 'localStorage', {
     value: {
-      getItem: () => (stored === undefined ? null : typeof stored === 'string' ? stored : JSON.stringify(stored)),
-      setItem: (k, v) => { setEnv.saved = v; },
+      getItem: () =>
+        stored === undefined ? null : typeof stored === 'string' ? stored : JSON.stringify(stored),
+      setItem: (k, v) => {
+        setEnv.saved = v;
+      },
     },
     configurable: true,
   });
   const real = Intl.DateTimeFormat;
-  Intl.DateTimeFormat = function () { return { resolvedOptions: () => ({ timeZone: zone }) }; };
-  return () => { Intl.DateTimeFormat = real; };
+  Intl.DateTimeFormat = function () {
+    return { resolvedOptions: () => ({ timeZone: zone }) };
+  };
+  return () => {
+    Intl.DateTimeFormat = real;
+  };
 }
 
 const { loadSettings, saveSettings } = await import('../src/state/settings.js');
@@ -36,12 +46,26 @@ test('defaults: English outside Israel, Hebrew for a Hebrew browser or an Israel
 
 test('default players: one human, two bots, three off, six different colours', () => {
   const s = withEnv({}, loadSettings);
-  assert.deepEqual(s.players.map((p) => p.mode), ['human', 'bot', 'bot', 'off', 'off', 'off']);
+  assert.deepEqual(
+    s.players.map((p) => p.mode),
+    ['human', 'bot', 'bot', 'off', 'off', 'off'],
+  );
   assert.equal(new Set(s.players.map((p) => p.color)).size, 6);
 });
 
 test('a good saved value is kept', () => {
-  const s = withEnv({ stored: { lang: 'he', length: 'long', botLevel: 'hard', volume: 0.25, online: { name: 'Dana', color: 3 } } }, loadSettings);
+  const s = withEnv(
+    {
+      stored: {
+        lang: 'he',
+        length: 'long',
+        botLevel: 'hard',
+        volume: 0.25,
+        online: { name: 'Dana', color: 3 },
+      },
+    },
+    loadSettings,
+  );
   assert.equal(s.lang, 'he');
   assert.equal(s.length, 'long');
   assert.equal(s.botLevel, 'hard');
@@ -50,13 +74,20 @@ test('a good saved value is kept', () => {
 });
 
 test('bad saved values are replaced by defaults or clamped', () => {
-  const s = withEnv({
-    stored: {
-      lang: 'fr', tab: '<script>', length: 'huge', pads: 7, volume: 5,
-      players: [{ mode: 'admin', name: 'x'.repeat(50), color: 99, keys: ['KeyA'] }],
-      online: { name: 'y'.repeat(50), color: -1 },
+  const s = withEnv(
+    {
+      stored: {
+        lang: 'fr',
+        tab: '<script>',
+        length: 'huge',
+        pads: 7,
+        volume: 5,
+        players: [{ mode: 'admin', name: 'x'.repeat(50), color: 99, keys: ['KeyA'] }],
+        online: { name: 'y'.repeat(50), color: -1 },
+      },
     },
-  }, loadSettings);
+    loadSettings,
+  );
   assert.equal(s.lang, 'en');
   assert.equal(s.tab, 'local');
   assert.equal(s.length, 'normal');

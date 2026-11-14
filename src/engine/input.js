@@ -38,7 +38,12 @@ export class Input {
       this.touch.set(e.pointerId, side(e));
     };
     const end = (e) => this.touch.delete(e.pointerId);
-    const events = [['pointerdown', start], ['pointerup', end], ['pointercancel', end], ['pointerleave', end]];
+    const events = [
+      ['pointerdown', start],
+      ['pointerup', end],
+      ['pointercancel', end],
+      ['pointerleave', end],
+    ];
     for (const [name, fn] of events) el.addEventListener(name, fn);
     return () => {
       for (const [name, fn] of events) el.removeEventListener(name, fn);
@@ -59,15 +64,29 @@ export class Input {
 
 const ARROWS = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' };
 const SYMBOLS = {
-  Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']',
-  Minus: '-', Equal: '=', Backslash: '\\', Backquote: '`', Enter: 'Enter', Tab: 'Tab',
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  Semicolon: ';',
+  Quote: "'",
+  BracketLeft: '[',
+  BracketRight: ']',
+  Minus: '-',
+  Equal: '=',
+  Backslash: '\\',
+  Backquote: '`',
+  Enter: 'Enter',
+  Tab: 'Tab',
 };
 // Keys whose name is a word: [strings.js key for the side or the name, the key's own name].
 const WORDS = {
   Space: ['keySpace', ''],
-  ShiftLeft: ['left', 'Shift'], ShiftRight: ['right', 'Shift'],
-  ControlLeft: ['left', 'Ctrl'], ControlRight: ['right', 'Ctrl'],
-  AltLeft: ['left', 'Alt'], AltRight: ['right', 'Alt'],
+  ShiftLeft: ['left', 'Shift'],
+  ShiftRight: ['right', 'Shift'],
+  ControlLeft: ['left', 'Ctrl'],
+  ControlRight: ['right', 'Ctrl'],
+  AltLeft: ['left', 'Alt'],
+  AltRight: ['right', 'Alt'],
 };
 
 // Keys that already mean something in the game and cannot be steering keys.

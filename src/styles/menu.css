@@ -1,38 +1,112 @@
 /* Menu: live demo strip, a slim bar (mode, sound, language), then the players
    and the settings. Two columns on a wide screen. On a phone: one column, one
    row per player, and Start pinned to the bottom of the screen. */
-.menu { display: flex; flex-direction: column; gap: 20px; }
-.menu > * { flex-shrink: 0; width: 100%; max-width: 1080px; margin-inline: auto; box-sizing: border-box; }
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.menu > * {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 1080px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
 
-.hero { position: relative; border: 2px solid var(--line); border-radius: 8px; overflow: hidden; }
-.hero canvas { display: block; width: 100%; opacity: 0.75; }
+.hero {
+  position: relative;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hero canvas {
+  display: block;
+  width: 100%;
+  opacity: 0.75;
+}
 .hero-text {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
   padding: 18px 22px;
   background: linear-gradient(to top, rgba(10, 13, 28, 0.92), rgba(10, 13, 28, 0) 75%);
   pointer-events: none;
 }
-.hero h1 { font-size: clamp(2.6rem, 9vw, 5rem); line-height: 1; letter-spacing: 0.04em; text-align: left; }
-[dir="rtl"] .hero h1 { text-align: right; }
+.hero h1 {
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+[dir='rtl'] .hero h1 {
+  text-align: right;
+}
 
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.bar-end { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.version { color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bar-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.version {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
 
-.menu-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px 36px; align-items: start; }
-.menu-grid.local { grid-template-areas: "players options" "players start"; grid-template-rows: auto 1fr; }
-.players { grid-area: players; }
-.options { grid-area: options; }
-.start-bar { grid-area: start; display: flex; flex-direction: column; gap: 8px; }
-.block { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.menu-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 20px 36px;
+  align-items: start;
+}
+.menu-grid.local {
+  grid-template-areas: 'players options' 'players start';
+  grid-template-rows: auto 1fr;
+}
+.players {
+  grid-area: players;
+}
+.options {
+  grid-area: options;
+}
+.start-bar {
+  grid-area: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
 
 /* ---------- Player rows ---------- */
-.slots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .slot {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: "dot name mode" "keys keys keys" "pick pick pick";
+  grid-template-areas: 'dot name mode' 'keys keys keys' 'pick pick pick';
   align-items: center;
   gap: 0 12px; /* rows space themselves, so an absent row leaves no gap */
   padding: 8px 12px;
@@ -40,85 +114,264 @@
   border-inline-start: 4px solid var(--c);
   border-radius: 6px;
 }
-.slot.off { background: transparent; outline: 1px dashed var(--line); outline-offset: -1px; border-inline-start-color: var(--line); }
-.slot.off .slot-name::placeholder { color: var(--muted); }
-button.dot { grid-area: dot; width: 24px; height: 24px; border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line); padding: 0; cursor: pointer; }
-button.dot:hover { box-shadow: 0 0 0 2px var(--muted); }
+.slot.off {
+  background: transparent;
+  outline: 1px dashed var(--line);
+  outline-offset: -1px;
+  border-inline-start-color: var(--line);
+}
+.slot.off .slot-name::placeholder {
+  color: var(--muted);
+}
+button.dot {
+  grid-area: dot;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--panel);
+  box-shadow: 0 0 0 1px var(--line);
+  padding: 0;
+  cursor: pointer;
+}
+button.dot:hover {
+  box-shadow: 0 0 0 2px var(--muted);
+}
 .slot-name {
-  grid-area: name; min-width: 0; width: 100%; box-sizing: border-box; min-height: var(--tap);
-  background: transparent; border: 0; border-bottom: 1px solid transparent; border-radius: 0;
-  padding: 2px 0; font-weight: 700;
+  grid-area: name;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--tap);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 2px 0;
+  font-weight: 700;
 }
 /* An empty name shows the colour's name, and it should look like a name. */
-.slot-name::placeholder { color: var(--text); opacity: 1; }
-.slot-name:hover, .slot-name:focus { border-bottom-color: var(--line); outline: none; }
-.slot-name:focus::placeholder { color: var(--muted); }
-.slot .seg { grid-area: mode; }
-.slot-keys { grid-area: keys; display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; color: var(--muted); font-size: 0.875rem; padding-inline-start: 36px; padding-block: 4px; }
-.slot-key { display: inline-flex; align-items: center; gap: 8px; }
-.slot-pick { grid-area: pick; padding-block: 8px 4px; }
-.keycap {
-  min-width: 2.4em; padding: 3px 8px;
-  background: var(--ink); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 5px;
-  font-weight: 700; color: var(--text); cursor: pointer; text-align: center;
+.slot-name::placeholder {
+  color: var(--text);
+  opacity: 1;
 }
-.keycap:hover { border-color: var(--muted); }
-.keycap.listening { border-color: var(--all); color: var(--all); }
+.slot-name:hover,
+.slot-name:focus {
+  border-bottom-color: var(--line);
+  outline: none;
+}
+.slot-name:focus::placeholder {
+  color: var(--muted);
+}
+.slot .seg {
+  grid-area: mode;
+}
+.slot-keys {
+  grid-area: keys;
+  display: flex;
+  align-items: center;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.875rem;
+  padding-inline-start: 36px;
+  padding-block: 4px;
+}
+.slot-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.slot-pick {
+  grid-area: pick;
+  padding-block: 8px 4px;
+}
+.keycap {
+  min-width: 2.4em;
+  padding: 3px 8px;
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 5px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+}
+.keycap:hover {
+  border-color: var(--muted);
+}
+.keycap.listening {
+  border-color: var(--all);
+  color: var(--all);
+}
 /* A touch screen has no keys to bind. */
 @media (hover: none) and (pointer: coarse) {
-  .slot-keys { display: none; }
-  button.dot { width: 34px; height: 34px; }
+  .slot-keys {
+    display: none;
+  }
+  button.dot {
+    width: 34px;
+    height: 34px;
+  }
 }
 
-.how summary { cursor: pointer; color: var(--muted); font-weight: 500; padding-block: 6px; }
-.howto { margin: 8px 0 0; padding-inline-start: 1.1em; color: var(--muted); font-size: 0.9375rem; display: flex; flex-direction: column; gap: 4px; }
+.how summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 500;
+  padding-block: 6px;
+}
+.howto {
+  margin: 8px 0 0;
+  padding-inline-start: 1.1em;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 /* ---------- Online ---------- */
-.field.code { text-transform: uppercase; letter-spacing: 0.3em; text-align: center; direction: ltr; }
-.field.code::placeholder { letter-spacing: 0; text-transform: none; }
-.join-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.room-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.room-code { font-family: var(--display); letter-spacing: 0.18em; color: var(--chalk); }
-.member {
-  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 12px;
-  min-height: var(--tap); box-sizing: border-box;
-  padding: 8px 12px; background: var(--panel); border-inline-start: 4px solid var(--c); border-radius: 6px;
+.field.code {
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  text-align: center;
+  direction: ltr;
 }
-.member .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
-.tag { color: var(--muted); font-size: 0.8125rem; }
-.room-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.field.code::placeholder {
+  letter-spacing: 0;
+  text-transform: none;
+}
+.join-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.room-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.room-code {
+  font-family: var(--display);
+  letter-spacing: 0.18em;
+  color: var(--chalk);
+}
+.member {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap);
+  box-sizing: border-box;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-inline-start: 4px solid var(--c);
+  border-radius: 6px;
+}
+.member .who {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.tag {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.room-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
 /* ---------- Phone ---------- */
 @media (max-width: 820px) {
-  .menu-grid, .menu-grid.local { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; grid-template-rows: none; gap: 24px; }
-  .players, .options, .start-bar { grid-area: auto; }
+  .menu-grid,
+  .menu-grid.local {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+    grid-template-rows: none;
+    gap: 24px;
+  }
+  .players,
+  .options,
+  .start-bar {
+    grid-area: auto;
+  }
 }
 @media (max-width: 640px) {
-  .menu { gap: 14px; padding-bottom: 0; }
-  .menu-grid.online { padding-bottom: max(var(--gutter), env(safe-area-inset-bottom, 0px)); }
-  .hero-text { padding: 12px 14px; }
-  .hero h1 { font-size: 2.8rem; }
-  .hero p { font-size: 0.9375rem; line-height: 1.35; }
+  .menu {
+    gap: 14px;
+    padding-bottom: 0;
+  }
+  .menu-grid.online {
+    padding-bottom: max(var(--gutter), env(safe-area-inset-bottom, 0px));
+  }
+  .hero-text {
+    padding: 12px 14px;
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+  }
+  .hero p {
+    font-size: 0.9375rem;
+    line-height: 1.35;
+  }
 
-  .bar { gap: 10px; }
-  .bar .tabs { display: flex; flex: 1 1 100%; }
-  .bar .tabs button { flex: 1; min-height: 50px; font-size: 1.0625rem; }
-  .bar-end { flex: 1 1 100%; justify-content: space-between; flex-wrap: nowrap; }
-  .version { order: 3; }
+  .bar {
+    gap: 10px;
+  }
+  .bar .tabs {
+    display: flex;
+    flex: 1 1 100%;
+  }
+  .bar .tabs button {
+    flex: 1;
+    min-height: 50px;
+    font-size: 1.0625rem;
+  }
+  .bar-end {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+  .version {
+    order: 3;
+  }
 
-  .slot { padding: 6px 10px; column-gap: 10px; }
-  .slot .seg button { padding-inline: 11px; }
+  .slot {
+    padding: 6px 10px;
+    column-gap: 10px;
+  }
+  .slot .seg button {
+    padding-inline: 11px;
+  }
 
   /* A setting's choices fill the row, so every choice is a big target. */
-  .menu .setting { flex-direction: column; align-items: stretch; gap: 6px; }
-  .menu .setting .seg { display: flex; }
-  .menu .setting .seg button { flex: 1; }
-  .room-actions .btn { flex: 1 1 auto; }
+  .menu .setting {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .menu .setting .seg {
+    display: flex;
+  }
+  .menu .setting .seg button {
+    flex: 1;
+  }
+  .room-actions .btn {
+    flex: 1 1 auto;
+  }
 
   /* Start stays within reach of the thumb while the list scrolls under it. */
   .start-bar {
-    position: sticky; bottom: 0; z-index: 5;
-    margin-inline: calc(-1 * var(--gutter)); padding: 14px var(--gutter) max(10px, env(safe-area-inset-bottom, 0px));
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 14px var(--gutter) max(10px, env(safe-area-inset-bottom, 0px));
     background: linear-gradient(to top, var(--ink) 78%, rgba(10, 13, 28, 0));
     text-align: center;
   }

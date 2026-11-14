@@ -79,7 +79,17 @@ test('head-on collision kills both and scores nobody', () => {
 });
 
 test('no self-collision while circling, for every speed and width', () => {
-  const combos = [[], ['fast'], ['slow'], ['thin'], ['thick'], ['fast', 'thick'], ['slow', 'thick'], ['fast', 'thin'], ['slow', 'thin']];
+  const combos = [
+    [],
+    ['fast'],
+    ['slow'],
+    ['thin'],
+    ['thick'],
+    ['fast', 'thick'],
+    ['slow', 'thick'],
+    ['fast', 'thin'],
+    ['slow', 'thin'],
+  ];
   for (const fx of combos) {
     const r = makeRound(2);
     const [a, b] = r.players;
@@ -181,7 +191,10 @@ test('reversed controls flip the turn direction', () => {
 
 test('items are picked up by driving over them', () => {
   const picked = [];
-  const r = makeRound(2, { powerups: true, hooks: { pickup: (p, it) => picked.push([p.id, it.def.id]) } });
+  const r = makeRound(2, {
+    powerups: true,
+    hooks: { pickup: (p, it) => picked.push([p.id, it.def.id]) },
+  });
   const [a, b] = r.players;
   put(a, 300, 360, 0);
   put(b, 300, 100, 0);

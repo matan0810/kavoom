@@ -49,7 +49,9 @@ const CACHE_FOREVER = 'public, max-age=31536000, immutable';
 // WebSocket to the page's own host as 'self'. It comes from the request, so it
 // is used only when it looks like a plain host name.
 function contentSecurityPolicy(host) {
-  const ownSocket = /^[a-z0-9.-]+(:\d{1,5})?$/i.test(host || '') ? ` ws://${host} wss://${host}` : '';
+  const ownSocket = /^[a-z0-9.-]+(:\d{1,5})?$/i.test(host || '')
+    ? ` ws://${host} wss://${host}`
+    : '';
   return [
     "default-src 'self'",
     "script-src 'self'",
@@ -86,7 +88,8 @@ function publicPath(urlPath) {
   const file = path.resolve(ROOT, rel);
   const clean = path.relative(ROOT, file).split(path.sep).join('/');
   const allowed = PUBLIC_FILES.has(clean) || PUBLIC_DIRS.some((d) => clean.startsWith(d));
-  if (!allowed || !file.startsWith(ROOT + path.sep) || !TYPES[path.extname(file)]) return { status: 404 };
+  if (!allowed || !file.startsWith(ROOT + path.sep) || !TYPES[path.extname(file)])
+    return { status: 404 };
   return { file };
 }
 
@@ -144,7 +147,8 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
       const urlPath = (req.url || '/').split('?')[0];
       if (urlPath === '/healthz') return res.writeHead(200, headers).end('ok');
       const { file, status } = publicPath(urlPath);
-      if (!file) return res.writeHead(status, headers).end(status === 400 ? 'Bad request' : 'Not found');
+      if (!file)
+        return res.writeHead(status, headers).end(status === 400 ? 'Bad request' : 'Not found');
       let body;
       try {
         body = await readFile(file);
@@ -152,7 +156,11 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
         return res.writeHead(404, headers).end('Not found');
       }
       const hashed = path.relative(ROOT, file).startsWith('assets' + path.sep);
-      res.writeHead(200, { ...headers, 'Content-Type': TYPES[path.extname(file)], 'Cache-Control': hashed ? CACHE_FOREVER : 'no-cache' });
+      res.writeHead(200, {
+        ...headers,
+        'Content-Type': TYPES[path.extname(file)],
+        'Cache-Control': hashed ? CACHE_FOREVER : 'no-cache',
+      });
       res.end(req.method === 'HEAD' ? undefined : body);
     } catch (e) {
       log('request failed:', e.message);
@@ -235,7 +243,10 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
         } else {
           const r = rooms.get(code);
           if (!r) return fail('noroom');
-          const back = msg.t === 'rejoin' && typeof msg.token === 'string' ? r.reconnect(msg.token, send) : null;
+          const back =
+            msg.t === 'rejoin' && typeof msg.token === 'string'
+              ? r.reconnect(msg.token, send)
+              : null;
           enter(r, back || r.add(msg.name, msg.color, send));
         }
       } catch (e) {
@@ -309,7 +320,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(1);
   }
   const port = Number(process.env.PORT) || 8080;
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   const { server } = startServer({ port, allowedOrigins });
   server.on('listening', () => console.log(`KAVOOM is running on http://localhost:${port}`));
 }

@@ -28,7 +28,9 @@ export class Net {
         if (opened) return;
         try {
           ws.close();
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         reject(new Error('timeout'));
       }, 5000);
       ws.onopen = () => {
@@ -64,7 +66,9 @@ export class Net {
         this.send({ t: 'rejoin', ...this.session, ...this.identity() });
         this.on.status('ok');
         return;
-      } catch { /* try again */ }
+      } catch {
+        /* try again */
+      }
     }
     if (!this.done) this.on.down();
   }
@@ -77,6 +81,8 @@ export class Net {
     this.done = true;
     try {
       this.ws.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }

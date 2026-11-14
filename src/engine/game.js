@@ -13,7 +13,10 @@ import { Round } from '../../shared/sim/round.js';
 import { Match } from '../../shared/sim/match.js';
 import { Renderer } from './renderer.js';
 
-const ONLINE_KEYS = [['ArrowLeft', 'ArrowRight'], ['KeyA', 'KeyD']];
+const ONLINE_KEYS = [
+  ['ArrowLeft', 'ArrowRight'],
+  ['KeyA', 'KeyD'],
+];
 const MAX_PADS = 4; // pairs of touch buttons that fit on one screen
 const COUNTDOWN_SECONDS = 2.4; // "3, 2, 1" before a round
 const COUNT_STEP = 0.8; // seconds each countdown number stays up
@@ -67,7 +70,11 @@ export class Game {
     const live = state === 'playing' || state === 'countdown' ? hud.live : null;
     let padOwners = [];
     if (this.mode === 'online') padOwners = this.myIndex >= 0 ? [this.myIndex] : [];
-    else if (this.setup) padOwners = this.setup.players.map((p, i) => (p.human ? i : -1)).filter((i) => i >= 0).slice(0, MAX_PADS);
+    else if (this.setup)
+      padOwners = this.setup.players
+        .map((p, i) => (p.human ? i : -1))
+        .filter((i) => i >= 0)
+        .slice(0, MAX_PADS);
     return {
       state,
       mode: this.mode,
@@ -239,7 +246,8 @@ export class Game {
 
   onlineSnapshot(m) {
     const { view, draw, sfx } = this;
-    if (this.mode !== 'online' || !view || this.state === 'idle' || this.state === 'matchEnd') return;
+    if (this.mode !== 'online' || !view || this.state === 'idle' || this.state === 'matchEnd')
+      return;
     const snap = decodeSnapshot(m);
     const first = view.players.length === 0;
     view.players = snap.players;
@@ -287,7 +295,11 @@ export class Game {
   sendInput() {
     if (this.myIndex < 0 || !this.send) return;
     const { input } = this;
-    const dir = input.keys(ONLINE_KEYS[0]) || input.keys(ONLINE_KEYS[1]) || input.padDir(this.myIndex) || input.touchDir();
+    const dir =
+      input.keys(ONLINE_KEYS[0]) ||
+      input.keys(ONLINE_KEYS[1]) ||
+      input.padDir(this.myIndex) ||
+      input.touchDir();
     if (dir === this.lastDir) return;
     this.lastDir = dir;
     this.send({ t: 'input', d: dir });
@@ -330,6 +342,10 @@ export class Game {
     if (this.state === 'idle') return;
     if (this.mode === 'online') this.sendInput();
     else if (!this.paused) this.stepLocal(dt);
-    this.renderer.draw(this.view, { dt: this.paused ? 0 : dt, intro: this.state === 'countdown', names: this.hud.names });
+    this.renderer.draw(this.view, {
+      dt: this.paused ? 0 : dt,
+      intro: this.state === 'countdown',
+      names: this.hud.names,
+    });
   }
 }

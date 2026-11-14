@@ -14,7 +14,9 @@ export function useWakeLock() {
         const next = await navigator.wakeLock.request('screen');
         if (mounted) lock = next;
         else next.release().catch(() => {});
-      } catch { /* refused (low battery, no permission): the game works without it */ }
+      } catch {
+        /* refused (low battery, no permission): the game works without it */
+      }
     };
     request();
     document.addEventListener('visibilitychange', request);

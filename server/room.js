@@ -11,17 +11,26 @@ import { Match } from '../shared/sim/match.js';
 const COUNTDOWN = 2.4;
 const ROUND_PAUSE = 3;
 const MAX_STEPS_PER_TICK = 8;
-const SETTINGS = { length: Object.keys(LENGTHS), powerups: ['on', 'off'], botLevel: Object.keys(BOT_LEVELS) };
+const SETTINGS = {
+  length: Object.keys(LENGTHS),
+  powerups: ['on', 'off'],
+  botLevel: Object.keys(BOT_LEVELS),
+};
 
 // Control characters, angle brackets, and the invisible characters that can
 // reorder or hide text (so a name cannot be made to look like another one).
-const UNSAFE_IN_NAME = /[\u0000-\u001f\u007f-\u009f<>\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g;
+const UNSAFE_IN_NAME =
+  // eslint-disable-next-line no-control-regex -- control characters are exactly what this removes
+  /[\u0000-\u001f\u007f-\u009f<>\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u2069\ufeff]/g;
 const NAME_LENGTH = 10;
 
 export function cleanName(name) {
   const text = typeof name === 'string' ? name : '';
   // Array.from counts whole characters, so an emoji is never cut in half.
-  const s = Array.from(text.replace(UNSAFE_IN_NAME, '').trim()).slice(0, NAME_LENGTH).join('').trim();
+  const s = Array.from(text.replace(UNSAFE_IN_NAME, '').trim())
+    .slice(0, NAME_LENGTH)
+    .join('')
+    .trim();
   return s || 'Player';
 }
 
@@ -45,7 +54,8 @@ export class Room {
 
   freeColor(pref) {
     const taken = new Set(this.members.map((m) => m.color));
-    if (Number.isInteger(pref) && pref >= 0 && pref < PALETTE.length && !taken.has(pref)) return pref;
+    if (Number.isInteger(pref) && pref >= 0 && pref < PALETTE.length && !taken.has(pref))
+      return pref;
     for (let i = 0; i < PALETTE.length; i++) if (!taken.has(i)) return i;
     return 0;
   }
@@ -73,7 +83,16 @@ export class Room {
   addBot() {
     if (this.members.length >= MAX_PLAYERS) return;
     const n = this.members.filter((m) => m.bot).length + 1;
-    this.members.push({ id: this.nextId++, name: `BOT ${n}`, color: this.freeColor(-1), bot: true, connected: true, token: null, send: null, input: 0 });
+    this.members.push({
+      id: this.nextId++,
+      name: `BOT ${n}`,
+      color: this.freeColor(-1),
+      bot: true,
+      connected: true,
+      token: null,
+      send: null,
+      input: 0,
+    });
   }
 
   remove(id) {
@@ -132,7 +151,13 @@ export class Room {
       host: this.hostId,
       state: this.state,
       settings: this.settings,
-      members: this.members.map((m) => ({ id: m.id, name: m.name, color: m.color, bot: m.bot, on: m.connected })),
+      members: this.members.map((m) => ({
+        id: m.id,
+        name: m.name,
+        color: m.color,
+        bot: m.bot,
+        on: m.connected,
+      })),
     };
   }
 
@@ -160,7 +185,13 @@ export class Room {
         m.color = msg.color;
         break;
       case 'set':
-        if (!host || !lobby || !Object.hasOwn(SETTINGS, msg.key) || !SETTINGS[msg.key].includes(msg.val)) return;
+        if (
+          !host ||
+          !lobby ||
+          !Object.hasOwn(SETTINGS, msg.key) ||
+          !SETTINGS[msg.key].includes(msg.val)
+        )
+          return;
         this.settings[msg.key] = msg.val;
         break;
       case 'addBot':
@@ -189,7 +220,13 @@ export class Room {
   // ---------- match ----------
 
   start() {
-    this.order = this.members.map((m) => ({ id: m.id, name: m.name, color: m.color, bot: m.bot, m }));
+    this.order = this.members.map((m) => ({
+      id: m.id,
+      name: m.name,
+      color: m.color,
+      bot: m.bot,
+      m,
+    }));
     this.match = new Match(this.order.length, LENGTHS[this.settings.length]);
     this.state = 'match';
     this.broadcast(this.info());
@@ -207,7 +244,8 @@ export class Room {
       rng: this.rng,
       powerups: this.settings.powerups === 'on',
       hooks: {
-        segment: (p, x0, y0, x1, y1, r) => this.addSegment(p.id, round1(x0), round1(y0), round1(x1), round1(y1), r),
+        segment: (p, x0, y0, x1, y1, r) =>
+          this.addSegment(p.id, round1(x0), round1(y0), round1(x1), round1(y1), r),
         death: (p) => this.events.push(encodeEvent.death(p)),
         pickup: (p, it) => this.events.push(encodeEvent.pickup(p, it)),
         clear: () => {
@@ -307,7 +345,13 @@ export class Room {
   endRound() {
     this.match.applyRound(this.round.points);
     const champion = this.match.winner();
-    this.broadcast({ t: 'roundEnd', winner: this.round.winner, scores: this.match.scores, champion, rounds: this.match.roundNo });
+    this.broadcast({
+      t: 'roundEnd',
+      winner: this.round.winner,
+      scores: this.match.scores,
+      champion,
+      rounds: this.match.roundNo,
+    });
     if (champion < 0) {
       this.phase = 'roundEnd';
       this.timer = ROUND_PAUSE;

@@ -12,9 +12,11 @@ export function MenuScreen({ online, identity, onStartLocal, onOpenSettings }) {
     <main className="screen menu">
       <Hero />
       <TopBar onOpenSettings={onOpenSettings} />
-      {settings.tab === 'local'
-        ? <LocalPane onStart={onStartLocal} />
-        : <OnlinePane online={online} identity={identity} />}
+      {settings.tab === 'local' ? (
+        <LocalPane onStart={onStartLocal} />
+      ) : (
+        <OnlinePane online={online} identity={identity} />
+      )}
     </main>
   );
 }

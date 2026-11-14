@@ -38,16 +38,27 @@ test('names are cleaned and capped', () => {
   assert.equal(cleanName(''), 'Player');
   assert.equal(cleanName(null), 'Player');
   assert.equal(cleanName({ toString: () => 'x' }), 'Player', 'only strings are names');
-  assert.equal(cleanName('ab\u202Ecd\u200B'), 'abcd', 'text-reordering and invisible characters are dropped');
+  assert.equal(
+    cleanName('ab\u202Ecd\u200B'),
+    'abcd',
+    'text-reordering and invisible characters are dropped',
+  );
   assert.equal(cleanName('\u200B\u200F'), 'Player', 'an invisible name is no name');
-  assert.equal(cleanName('😀'.repeat(12)), '😀'.repeat(10), 'emoji are counted whole, never cut in half');
+  assert.equal(
+    cleanName('😀'.repeat(12)),
+    '😀'.repeat(10),
+    'emoji are counted whole, never cut in half',
+  );
 });
 
 test('a room holds at most six, bots included', () => {
   const { room, ma } = setup();
   for (let i = 0; i < 10; i++) room.handle(ma.id, { t: 'addBot' });
   assert.equal(room.members.length, 6);
-  assert.equal(room.add('x', 1, () => {}), null);
+  assert.equal(
+    room.add('x', 1, () => {}),
+    null,
+  );
   assert.equal(new Set(room.members.map((m) => m.color)).size, 6);
 });
 
@@ -86,7 +97,10 @@ test('countdown, then snapshots with trail segments, and input steers', () => {
   const snap = a.last('s');
   assert.equal(snap.ph, 'p');
   assert.ok(snap.p[0][2] > before + 0.3, 'angle grew while turning right');
-  assert.ok(a.all('s').some((m) => m.g.length > 0), 'segments were sent');
+  assert.ok(
+    a.all('s').some((m) => m.g.length > 0),
+    'segments were sent',
+  );
 });
 
 test('a full match with bots ends back in the lobby with a champion', () => {

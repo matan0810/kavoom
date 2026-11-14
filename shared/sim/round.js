@@ -3,7 +3,16 @@
 //   segment(player, x0, y0, x1, y1, r)   a piece of trail was laid
 //   death(player)   pickup(player, item)   clear()   spawn(item)
 
-import { BASE, DT, POWERUPS, POWERUP_RADIUS, POWERUP_LIFE, POWERUP_MAX, FX_MULT, BOT_LEVELS } from '../config.js';
+import {
+  BASE,
+  DT,
+  POWERUPS,
+  POWERUP_RADIUS,
+  POWERUP_LIFE,
+  POWERUP_MAX,
+  FX_MULT,
+  BOT_LEVELS,
+} from '../config.js';
 import { Grid } from './grid.js';
 import { botDecide } from './bot.js';
 
@@ -102,7 +111,8 @@ export class Round {
     const self = p.id + 1;
     for (let k = 0; k < n; k++) {
       const a = p.angle - ARC_HALF + (2 * ARC_HALF * k) / (n - 1);
-      if (this.grid.probe(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, self, this.stepN, minAge)) return true;
+      if (this.grid.probe(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, self, this.stepN, minAge))
+        return true;
     }
     return false;
   }

@@ -43,11 +43,29 @@ export class Sfx {
     }
   }
 
-  tick() { this.tone(440, 0.09); }
-  go() { this.tone(880, 0.18); }
-  death() { this.tone(220, 0.35, { type: 'sawtooth', vol: 0.09, to: 50 }); }
-  pickup() { this.tone(520, 0.12, { type: 'triangle', vol: 0.1, to: 1040 }); }
-  clear() { this.tone(900, 0.3, { type: 'sine', vol: 0.09, to: 200 }); }
-  round() { [523, 659].forEach((f, i) => this.tone(f, 0.14, { type: 'triangle', vol: 0.09, delay: i * 0.12 })); }
-  win() { [523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.2, { type: 'triangle', vol: 0.1, delay: i * 0.13 })); }
+  tick() {
+    this.tone(440, 0.09);
+  }
+  go() {
+    this.tone(880, 0.18);
+  }
+  death() {
+    this.tone(220, 0.35, { type: 'sawtooth', vol: 0.09, to: 50 });
+  }
+  pickup() {
+    this.tone(520, 0.12, { type: 'triangle', vol: 0.1, to: 1040 });
+  }
+  clear() {
+    this.tone(900, 0.3, { type: 'sine', vol: 0.09, to: 200 });
+  }
+  round() {
+    [523, 659].forEach((f, i) =>
+      this.tone(f, 0.14, { type: 'triangle', vol: 0.09, delay: i * 0.12 }),
+    );
+  }
+  win() {
+    [523, 659, 784, 1047].forEach((f, i) =>
+      this.tone(f, 0.2, { type: 'triangle', vol: 0.1, delay: i * 0.13 }),
+    );
+  }
 }

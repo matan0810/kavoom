@@ -41,61 +41,71 @@ export function useOnlineRoom(identity) {
     if (location.hash) history.replaceState(history.state, '', location.pathname);
   }, []);
 
-  const onMessage = useCallback((m) => {
-    switch (m.t) {
-      case 'joined':
-        youRef.current = m.you;
-        setYou(m.you);
-        // The code from a shared link has done its job; a clean address also
-        // keeps it out of the history entries the Back button walks through.
-        if (location.hash) history.replaceState(history.state, '', location.pathname);
-        break;
-      case 'room':
-        setRoom(m);
-        setStatus('');
-        break;
-      case 'round':
-        game.onlineRound(m, youRef.current);
-        break;
-      case 's':
-        game.onlineSnapshot(m);
-        break;
-      case 'roundEnd':
-        game.onlineRoundEnd(m);
-        break;
-      case 'error':
-        // Refused at the door, or the room is gone: either way we are not in one.
-        leave(Object.hasOwn(ERRORS, m.code) ? ERRORS[m.code] : 'lost');
-        break;
-    }
-  }, [leave]);
+  const onMessage = useCallback(
+    (m) => {
+      switch (m.t) {
+        case 'joined':
+          youRef.current = m.you;
+          setYou(m.you);
+          // The code from a shared link has done its job; a clean address also
+          // keeps it out of the history entries the Back button walks through.
+          if (location.hash) history.replaceState(history.state, '', location.pathname);
+          break;
+        case 'room':
+          setRoom(m);
+          setStatus('');
+          break;
+        case 'round':
+          game.onlineRound(m, youRef.current);
+          break;
+        case 's':
+          game.onlineSnapshot(m);
+          break;
+        case 'roundEnd':
+          game.onlineRoundEnd(m);
+          break;
+        case 'error':
+          // Refused at the door, or the room is gone: either way we are not in one.
+          leave(Object.hasOwn(ERRORS, m.code) ? ERRORS[m.code] : 'lost');
+          break;
+      }
+    },
+    [leave],
+  );
 
   // first: the opening message, { t: 'create' } or { t: 'join', code }.
-  const connect = useCallback(async (first) => {
-    if (net.current) return;
-    setBusy(true);
-    setStatus('connecting');
-    const mine = new Net(serverUrl(), {
-      message: (m) => mine === net.current && onMessage(m),
-      status: (s) => mine === net.current && setStatus(s === 'ok' ? '' : 'reconnecting'),
-      down: () => {
-        if (mine !== net.current) return;
+  const connect = useCallback(
+    async (first) => {
+      if (net.current) return;
+      setBusy(true);
+      setStatus('connecting');
+      const mine = new Net(
+        serverUrl(),
+        {
+          message: (m) => mine === net.current && onMessage(m),
+          status: (s) => mine === net.current && setStatus(s === 'ok' ? '' : 'reconnecting'),
+          down: () => {
+            if (mine !== net.current) return;
+            net.current = null;
+            leave('lost');
+          },
+        },
+        () => latestIdentity.current,
+      );
+      net.current = mine;
+      game.send = (msg) => mine.send(msg);
+      try {
+        await mine.open();
+        setStatus('');
+        mine.send({ ...first, ...latestIdentity.current });
+      } catch {
         net.current = null;
-        leave('lost');
-      },
-    }, () => latestIdentity.current);
-    net.current = mine;
-    game.send = (msg) => mine.send(msg);
-    try {
-      await mine.open();
-      setStatus('');
-      mine.send({ ...first, ...latestIdentity.current });
-    } catch {
-      net.current = null;
-      setStatus('noServer');
-    }
-    setBusy(false);
-  }, [leave, onMessage]);
+        setStatus('noServer');
+      }
+      setBusy(false);
+    },
+    [leave, onMessage],
+  );
 
   // Closing the tab's component tree closes the socket too.
   useEffect(() => () => net.current && net.current.close(), []);

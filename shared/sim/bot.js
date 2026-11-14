@@ -20,7 +20,11 @@ function blocked(round, p, x, y, ang, r, minAge, cfg, ghost) {
     const m = r + 3;
     const nx = -Math.sin(ang) * m;
     const ny = Math.cos(ang) * m;
-    if (g.probe(x, y, id, s, minAge) || g.probe(x + nx, y + ny, id, s, minAge) || g.probe(x - nx, y - ny, id, s, minAge)) {
+    if (
+      g.probe(x, y, id, s, minAge) ||
+      g.probe(x + nx, y + ny, id, s, minAge) ||
+      g.probe(x - nx, y - ny, id, s, minAge)
+    ) {
       return true;
     }
   }

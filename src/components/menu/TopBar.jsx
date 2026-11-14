@@ -11,18 +11,36 @@ export function TopBar({ onOpenSettings }) {
       <Segmented
         className="tabs"
         label={t('tabLocal')}
-        options={[['local', t('tabLocal')], ['online', t('tabOnline')]]}
+        options={[
+          ['local', t('tabLocal')],
+          ['online', t('tabOnline')],
+        ]}
         value={settings.tab}
-        onChange={(tab) => update((s) => { s.tab = tab; })}
+        onChange={(tab) =>
+          update((s) => {
+            s.tab = tab;
+          })
+        }
       />
       <div className="bar-end">
-        <span className="version" dir="ltr">v{VERSION}</span>
-        <button type="button" className="btn" onClick={onOpenSettings}>{t('moreSettings')}</button>
+        <span className="version" dir="ltr">
+          v{VERSION}
+        </span>
+        <button type="button" className="btn" onClick={onOpenSettings}>
+          {t('moreSettings')}
+        </button>
         <Segmented
           label="Language"
-          options={[['he', 'עב'], ['en', 'EN']]}
+          options={[
+            ['he', 'עב'],
+            ['en', 'EN'],
+          ]}
           value={settings.lang}
-          onChange={(lang) => update((s) => { s.lang = lang; })}
+          onChange={(lang) =>
+            update((s) => {
+              s.lang = lang;
+            })
+          }
         />
       </div>
     </nav>

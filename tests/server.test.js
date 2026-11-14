@@ -59,7 +59,9 @@ test('serves the game with security headers', () =>
     assert.equal(res.headers['x-content-type-options'], 'nosniff');
     assert.equal((await get(port, '/favicon.svg')).headers['content-type'], 'image/svg+xml');
     // The page loads one script and one stylesheet, both from assets/, and nothing inline.
-    const script = /<script type="module"[^>]* src="(\/assets\/[^"]+\.js)"><\/script>/.exec(res.body);
+    const script = /<script type="module"[^>]* src="(\/assets\/[^"]+\.js)"><\/script>/.exec(
+      res.body,
+    );
     const style = /<link rel="stylesheet"[^>]* href="(\/assets\/[^"]+\.css)">/.exec(res.body);
     assert.ok(script && style, 'index.html links its built script and stylesheet');
     assert.doesNotMatch(res.body, /<script(?![^>]* src=)|<style|\sstyle=|\son[a-z]+=/);
@@ -80,7 +82,22 @@ test('a malformed URL is a 400 and does not take the server down', () =>
 
 test('only public files are served', () =>
   withServer(async (port) => {
-    for (const p of ['/package.json', '/server/server.js', '/server/room.js', '/tests/sim.test.js', '/.git/config', '/assets/..%2Fpackage.json', '/assets/../server/room.js', '/assets/%2E%2E/%2E%2E/server/room.js', '/assets/..%5C..%5Cserver%5Croom.js', '/README.md', '/src/main.jsx', '/shared/config.js', '/vite.config.js', '/assets/../index.html.map']) {
+    for (const p of [
+      '/package.json',
+      '/server/server.js',
+      '/server/room.js',
+      '/tests/sim.test.js',
+      '/.git/config',
+      '/assets/..%2Fpackage.json',
+      '/assets/../server/room.js',
+      '/assets/%2E%2E/%2E%2E/server/room.js',
+      '/assets/..%5C..%5Cserver%5Croom.js',
+      '/README.md',
+      '/src/main.jsx',
+      '/shared/config.js',
+      '/vite.config.js',
+      '/assets/../index.html.map',
+    ]) {
       assert.equal((await get(port, p)).status, 404, p);
     }
     assert.equal((await get(port, '/', 'POST')).status, 405);
@@ -107,7 +124,15 @@ test('extra origins can be allowed explicitly', () =>
 test('garbage messages are ignored and the room still works', () =>
   withServer(async (port, app) => {
     const { ws } = await connect(port);
-    for (const junk of ['not json', '42', 'null', '[]', '{"t":5}', JSON.stringify({ t: 'set', key: '__proto__', val: 'x' })]) ws.send(junk);
+    for (const junk of [
+      'not json',
+      '42',
+      'null',
+      '[]',
+      '{"t":5}',
+      JSON.stringify({ t: 'set', key: '__proto__', val: 'x' }),
+    ])
+      ws.send(junk);
     const joined = nextMessage(ws, 'joined');
     ws.send(JSON.stringify({ t: 'create', name: { evil: true }, color: 'red' }));
     const m = await joined;
@@ -139,15 +164,21 @@ test('one address cannot open unlimited connections', () =>
     open.forEach((w) => w.close());
   }));
 
-test('the policy names the page\'s own WebSocket address, and ignores a strange Host', () =>
+test("the policy names the page's own WebSocket address, and ignores a strange Host", () =>
   withServer(async (port) => {
     const csp = (await get(port, '/')).headers['content-security-policy'];
-    assert.match(csp, new RegExp(`connect-src 'self' ws://127\\.0\\.0\\.1:${port} wss://127\\.0\\.0\\.1:${port};`));
+    assert.match(
+      csp,
+      new RegExp(`connect-src 'self' ws://127\\.0\\.0\\.1:${port} wss://127\\.0\\.0\\.1:${port};`),
+    );
     const odd = await new Promise((resolve, reject) => {
-      const req = http.request({ host: '127.0.0.1', port, path: '/', headers: { Host: "evil.example; script-src *" } }, (res) => {
-        res.resume();
-        res.on('end', () => resolve(res.headers));
-      });
+      const req = http.request(
+        { host: '127.0.0.1', port, path: '/', headers: { Host: 'evil.example; script-src *' } },
+        (res) => {
+          res.resume();
+          res.on('end', () => resolve(res.headers));
+        },
+      );
       req.on('error', reject);
       req.end();
     });

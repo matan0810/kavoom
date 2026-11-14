@@ -92,11 +92,27 @@ export function GameScreen({ ui, online }) {
 
   useWakeLock();
 
-  const classes = ['screen', 'game', compact && 'compact', padOwners.length > 0 && 'touch', padOwners.length === 1 && 'solo'].filter(Boolean).join(' ');
+  const classes = [
+    'screen',
+    'game',
+    compact && 'compact',
+    padOwners.length > 0 && 'touch',
+    padOwners.length === 1 && 'solo',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <section className={classes}>
-      <GameHud ui={ui} compact={compact} onMenu={openMenu} onPause={pause} onResume={resume} onSettings={openSettings} onQuit={askQuit} />
+      <GameHud
+        ui={ui}
+        compact={compact}
+        onMenu={openMenu}
+        onPause={pause}
+        onResume={resume}
+        onSettings={openSettings}
+        onQuit={askQuit}
+      />
       <Arena ui={ui} touchHint={coarse} />
       {padOwners.length > 0 && <TouchPads owners={padOwners} players={ui.players} />}
       <GameDialogs

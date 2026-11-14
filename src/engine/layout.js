@@ -18,5 +18,9 @@ export function fitArena(boxW, boxH) {
   const tall = { w: tallW, h: tallW * RATIO, rotated: true };
   // Turn it only when that is clearly bigger, so a nearly square window does not flip back and forth.
   const best = tall.w * tall.h > flat.w * flat.h * 1.25 ? tall : flat;
-  return { w: Math.max(MIN, Math.floor(best.w)), h: Math.max(MIN, Math.floor(best.h)), rotated: best.rotated };
+  return {
+    w: Math.max(MIN, Math.floor(best.w)),
+    h: Math.max(MIN, Math.floor(best.h)),
+    rotated: best.rotated,
+  };
 }

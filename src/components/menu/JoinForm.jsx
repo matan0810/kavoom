@@ -13,7 +13,12 @@ export function JoinForm({ online }) {
   return (
     <>
       <h2>{t('tabOnline')}</h2>
-      <button type="button" className="btn primary big" disabled={online.busy} onClick={() => online.connect({ t: 'create' })}>
+      <button
+        type="button"
+        className="btn primary big"
+        disabled={online.busy}
+        onClick={() => online.connect({ t: 'create' })}
+      >
         {t('createRoom')}
       </button>
       <div className="join-row">
@@ -28,7 +33,9 @@ export function JoinForm({ online }) {
           onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
           onKeyDown={(e) => e.key === 'Enter' && join()}
         />
-        <button type="button" className="btn" disabled={!canJoin} onClick={join}>{t('joinRoom')}</button>
+        <button type="button" className="btn" disabled={!canJoin} onClick={join}>
+          {t('joinRoom')}
+        </button>
       </div>
     </>
   );

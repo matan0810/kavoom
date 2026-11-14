@@ -30,7 +30,13 @@ const round3 = (v) => Math.round(v * 1000) / 1000;
 
 export const encodeEvent = {
   death: (player) => ['d', player.id, round1(player.x), round1(player.y)],
-  pickup: (player, item) => ['k', player.id, round1(item.x), round1(item.y), POWERUPS.indexOf(item.def)],
+  pickup: (player, item) => [
+    'k',
+    player.id,
+    round1(item.x),
+    round1(item.y),
+    POWERUPS.indexOf(item.def),
+  ],
   clear: () => ['c'],
 };
 
@@ -47,7 +53,12 @@ export function encodeSnapshot(round, { countingDown, countdown, segments, event
     ph: countingDown ? 'c' : 'p',
     cd: round1(Math.max(0, countdown)),
     p: round.players.map(encodePlayer),
-    it: round.items.map((it) => [POWERUPS.indexOf(it.def), round1(it.x), round1(it.y), round1(it.life)]),
+    it: round.items.map((it) => [
+      POWERUPS.indexOf(it.def),
+      round1(it.x),
+      round1(it.y),
+      round1(it.life),
+    ]),
     wr: round1(round.wrap),
     g: segments,
     e: events,
@@ -64,7 +75,8 @@ function decodePlayer([x, y, angle, alive, r, effects], id) {
 
 function decodeEvent([kind, id, x, y, powerup]) {
   if (kind === 'd') return { type: 'death', player: { id, x, y } };
-  if (kind === 'k') return { type: 'pickup', player: { id }, item: { x, y, def: POWERUPS[powerup] } };
+  if (kind === 'k')
+    return { type: 'pickup', player: { id }, item: { x, y, def: POWERUPS[powerup] } };
   return { type: 'clear' };
 }
 

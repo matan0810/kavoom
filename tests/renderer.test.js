@@ -4,10 +4,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const calls = [];
-const ctx = new Proxy({}, {
-  get: (_, name) => (...args) => { if (name === 'setTransform') calls.push(args); },
-  set: () => true,
-});
+const ctx = new Proxy(
+  {},
+  {
+    get:
+      (_, name) =>
+      (...args) => {
+        if (name === 'setTransform') calls.push(args);
+      },
+    set: () => true,
+  },
+);
 globalThis.window = { devicePixelRatio: 1 };
 globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) };
 const { Renderer } = await import('../src/engine/renderer.js');
@@ -34,9 +41,17 @@ test('a standing arena is a pure rotation: corners land on corners, nothing is m
   const m = calls[0];
   const [a, b, c, d] = m;
   assert.ok(a * d - b * c > 0, 'positive determinant: a rotation, not a mirror image');
-  const corners = [[0, 0], [1120, 0], [0, 720], [1120, 720]].map(([x, y]) => apply(m, x, y));
+  const corners = [
+    [0, 0],
+    [1120, 0],
+    [0, 720],
+    [1120, 720],
+  ].map(([x, y]) => apply(m, x, y));
   for (const [x, y] of corners) {
-    assert.ok(x > -0.001 && x < 360.001 && y > -0.001 && y < 560.001, `corner (${x}, ${y}) is on the canvas`);
+    assert.ok(
+      x > -0.001 && x < 360.001 && y > -0.001 && y < 560.001,
+      `corner (${x}, ${y}) is on the canvas`,
+    );
   }
   // Arena x runs down the screen: the arena's far end is at the bottom.
   assert.ok(apply(m, 1120, 0)[1] > apply(m, 0, 0)[1]);

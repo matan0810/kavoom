@@ -27,7 +27,9 @@ export function Dialog({ title, text, actions, onClose, escCloses = true, childr
         onClose();
       } else if (e.code === 'Tab') {
         // Tab goes round the dialog's own controls and never reaches the page behind it.
-        const stops = [...card.current.querySelectorAll('button:not(:disabled), input, [tabindex]')];
+        const stops = [
+          ...card.current.querySelectorAll('button:not(:disabled), input, [tabindex]'),
+        ];
         const at = stops.indexOf(document.activeElement);
         const next = stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length];
         e.preventDefault();
@@ -46,7 +48,12 @@ export function Dialog({ title, text, actions, onClose, escCloses = true, childr
         {children}
         <div className="overlay-actions" ref={row}>
           {actions.map((a) => (
-            <button key={a.label} type="button" className={`btn${a.primary ? ' primary' : ''}`} onClick={a.onClick}>
+            <button
+              key={a.label}
+              type="button"
+              className={`btn${a.primary ? ' primary' : ''}`}
+              onClick={a.onClick}
+            >
               {a.label}
             </button>
           ))}

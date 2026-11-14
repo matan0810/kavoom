@@ -23,7 +23,10 @@ export function App() {
   // Who this player is online.
   const onlineName = settings.online.name.trim() || t('player');
   const onlineColor = settings.online.color;
-  const identity = useMemo(() => ({ name: onlineName, color: onlineColor }), [onlineName, onlineColor]);
+  const identity = useMemo(
+    () => ({ name: onlineName, color: onlineColor }),
+    [onlineName, onlineColor],
+  );
   const online = useOnlineRoom(identity);
 
   // The menu's settings dialog does not follow the player into a match.
@@ -43,12 +46,14 @@ export function App() {
 
   const startLocal = () => {
     game.startLocal({
-      players: settings.players.filter((p) => p.mode !== 'off').map((p) => ({
-        name: p.name.trim() || colorName(p.color),
-        color: PALETTE[p.color].hex,
-        human: p.mode === 'human',
-        keys: p.keys,
-      })),
+      players: settings.players
+        .filter((p) => p.mode !== 'off')
+        .map((p) => ({
+          name: p.name.trim() || colorName(p.color),
+          color: PALETTE[p.color].hex,
+          human: p.mode === 'human',
+          keys: p.keys,
+        })),
       botLevel: settings.botLevel,
       powerups: settings.powerups === 'on',
       length: settings.length,
@@ -58,7 +63,12 @@ export function App() {
   if (inGame) return <GameScreen ui={ui} online={online} />;
   return (
     <>
-      <MenuScreen online={online} identity={identity} onStartLocal={startLocal} onOpenSettings={() => setSettingsOpen(true)} />
+      <MenuScreen
+        online={online}
+        identity={identity}
+        onStartLocal={startLocal}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
     </>
   );

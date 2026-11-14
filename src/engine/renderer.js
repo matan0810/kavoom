@@ -6,12 +6,42 @@ import { POWERUPS, POWERUP_RADIUS, TARGET_COLORS } from '../../shared/config.js'
 const TRAIL_SCALE = 2;
 const FX_DUR = {};
 for (const d of POWERUPS) if (d.fx) FX_DUR[d.fx] = Math.max(FX_DUR[d.fx] || 0, d.dur);
-const FX_COLOR = { fast: '#ffd23f', slow: '#4cc9f0', thin: '#3ddc97', thick: '#ff5a6e', ghost: '#e8ebff', reverse: '#ff5a6e' };
+const FX_COLOR = {
+  fast: '#ffd23f',
+  slow: '#4cc9f0',
+  thin: '#3ddc97',
+  thick: '#ff5a6e',
+  ghost: '#e8ebff',
+  reverse: '#ff5a6e',
+};
 
 const GLYPHS = {
-  bolt: [[0.25, -1], [-0.6, 0.15], [-0.05, 0.15], [-0.25, 1], [0.6, -0.2], [0.05, -0.2]],
-  hourglass: [[-0.6, -0.9], [0.6, -0.9], [0.12, 0], [0.6, 0.9], [-0.6, 0.9], [-0.12, 0]],
-  star: [[0, -1], [0.22, -0.22], [1, 0], [0.22, 0.22], [0, 1], [-0.22, 0.22], [-1, 0], [-0.22, -0.22]],
+  bolt: [
+    [0.25, -1],
+    [-0.6, 0.15],
+    [-0.05, 0.15],
+    [-0.25, 1],
+    [0.6, -0.2],
+    [0.05, -0.2],
+  ],
+  hourglass: [
+    [-0.6, -0.9],
+    [0.6, -0.9],
+    [0.12, 0],
+    [0.6, 0.9],
+    [-0.6, 0.9],
+    [-0.12, 0],
+  ],
+  star: [
+    [0, -1],
+    [0.22, -0.22],
+    [1, 0],
+    [0.22, 0.22],
+    [0, 1],
+    [-0.22, 0.22],
+    [-1, 0],
+    [-0.22, -0.22],
+  ],
 };
 
 function poly(ctx, pts) {
@@ -130,7 +160,15 @@ export class Renderer {
       const a = Math.random() * Math.PI * 2;
       const v = (big ? 60 : 40) + Math.random() * (big ? 200 : 90);
       const life = 0.35 + Math.random() * 0.5;
-      this.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, color });
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v,
+        life,
+        max: life,
+        color,
+      });
     }
     this.rings.push({ x, y, color, life: 0.5, max: 0.5, size: big ? 46 : 26 });
     if (big && !this.calm) this.shake = 0.28;
@@ -173,7 +211,8 @@ export class Renderer {
     }
 
     ctx.fillStyle = '#1c2342';
-    for (let y = 40; y < h; y += 40) for (let x = 40; x < w; x += 40) ctx.fillRect(x - 1, y - 1, 2, 2);
+    for (let y = 40; y < h; y += 40)
+      for (let x = 40; x < w; x += 40) ctx.fillRect(x - 1, y - 1, 2, 2);
 
     ctx.drawImage(this.trail, 0, 0, w, h);
 
@@ -268,7 +307,13 @@ export class Renderer {
     for (const k in p.fx) {
       if (p.fx[k] <= 0) continue;
       ctx.beginPath();
-      ctx.arc(0, 0, ring, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, p.fx[k] / FX_DUR[k]));
+      ctx.arc(
+        0,
+        0,
+        ring,
+        -Math.PI / 2,
+        -Math.PI / 2 + Math.PI * 2 * Math.min(1, p.fx[k] / FX_DUR[k]),
+      );
       ctx.strokeStyle = FX_COLOR[k];
       ctx.lineWidth = 2;
       ctx.stroke();

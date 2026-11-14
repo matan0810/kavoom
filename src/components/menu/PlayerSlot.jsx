@@ -37,20 +37,36 @@ export function PlayerSlot({ index, pickerOpen, onTogglePicker, listening, onLis
         value={p.name}
         placeholder={colorName(p.color)}
         aria-label={t('playerName', index + 1)}
-        onChange={(e) => change((me) => { me.name = e.target.value; })}
+        onChange={(e) =>
+          change((me) => {
+            me.name = e.target.value;
+          })
+        }
       />
       <Segmented
         label={t('playerName', index + 1)}
-        options={[['off', t('modeOff')], ['human', t('modeHuman')], ['bot', t('modeBot')]]}
+        options={[
+          ['off', t('modeOff')],
+          ['human', t('modeHuman')],
+          ['bot', t('modeBot')],
+        ]}
         value={p.mode}
-        onChange={(mode) => change((me) => { me.mode = mode; })}
+        onChange={(mode) =>
+          change((me) => {
+            me.mode = mode;
+          })
+        }
       />
       {p.mode === 'human' && (
         <div className="slot-keys">
           {[t('left'), t('right')].map((label, side) => (
             <span key={side} className="slot-key">
               {label}
-              <button type="button" className={`keycap${listening === side ? ' listening' : ''}`} onClick={() => onListen(side)}>
+              <button
+                type="button"
+                className={`keycap${listening === side ? ' listening' : ''}`}
+                onClick={() => onListen(side)}
+              >
                 {listening === side ? t('pressKey') : keyLabel(p.keys[side], t)}
               </button>
             </span>

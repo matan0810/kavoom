@@ -56,7 +56,14 @@ export function LocalPane({ onStart }) {
 
       <section className="block options">
         <h2>{t('settings')}</h2>
-        <MatchSettings values={settings} onChange={(key, val) => update((s) => { s[key] = val; })} />
+        <MatchSettings
+          values={settings}
+          onChange={(key, val) =>
+            update((s) => {
+              s[key] = val;
+            })
+          }
+        />
         <details className="how">
           <summary>{t('howTitle')}</summary>
           <ul className="howto">
@@ -69,8 +76,14 @@ export function LocalPane({ onStart }) {
       </section>
 
       <div className="start-bar">
-        <button type="button" className="btn primary big" disabled={active < 2} onClick={onStart}>{t('start')}</button>
-        <p className="hint">{active < 2 ? t('needTwo') : t('startHint', active, LENGTHS[settings.length] * (active - 1))}</p>
+        <button type="button" className="btn primary big" disabled={active < 2} onClick={onStart}>
+          {t('start')}
+        </button>
+        <p className="hint">
+          {active < 2
+            ? t('needTwo')
+            : t('startHint', active, LENGTHS[settings.length] * (active - 1))}
+        </p>
       </div>
     </div>
   );

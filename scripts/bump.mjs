@@ -16,7 +16,12 @@ const write = (f, s) => writeFile(new URL(`../${f}`, import.meta.url), s);
 
 const pkg = JSON.parse(await read('package.json'));
 const [maj, min, pat] = pkg.version.split('.').map(Number);
-const next = kind === 'major' ? `${maj + 1}.0.0` : kind === 'minor' ? `${maj}.${min + 1}.0` : `${maj}.${min}.${pat + 1}`;
+const next =
+  kind === 'major'
+    ? `${maj + 1}.0.0`
+    : kind === 'minor'
+      ? `${maj}.${min + 1}.0`
+      : `${maj}.${min}.${pat + 1}`;
 
 const log = await read('CHANGELOG.md');
 const unreleased = /## \[Unreleased\]\n([\s\S]*?)(?=\n## \[|$)/.exec(log);
@@ -25,7 +30,10 @@ if (!unreleased || !unreleased[1].trim()) {
   process.exit(1);
 }
 const date = new Date().toISOString().slice(0, 10);
-await write('CHANGELOG.md', log.replace('## [Unreleased]\n', `## [Unreleased]\n\n## [${next}] - ${date}\n`));
+await write(
+  'CHANGELOG.md',
+  log.replace('## [Unreleased]\n', `## [Unreleased]\n\n## [${next}] - ${date}\n`),
+);
 
 pkg.version = next;
 await write('package.json', JSON.stringify(pkg, null, 2) + '\n');
@@ -36,6 +44,9 @@ if (lock.packages && lock.packages['']) lock.packages[''].version = next;
 await write('package-lock.json', JSON.stringify(lock, null, 2) + '\n');
 
 const config = await read('shared/config.js');
-await write('shared/config.js', config.replace(/export const VERSION = '[^']*';/, `export const VERSION = '${next}';`));
+await write(
+  'shared/config.js',
+  config.replace(/export const VERSION = '[^']*';/, `export const VERSION = '${next}';`),
+);
 
 console.log(`Version ${next} is ready. Commit it as "Release v${next}" and merge dev into main.`);

@@ -109,6 +109,13 @@ git checkout dev
       to open it and confirm the menu shows `vX.Y.Z`.
 - [ ] Tell the owner: version, link to the release page, what is in it.
 
+### Changes with nothing for players
+
+Docs, workflows and Render config can reach `main` without a version bump, still only on
+the owner's order: fast-forward `main` to `dev` as above and skip `npm run bump`. The
+`Release` workflow sees the version is already tagged and does nothing; Render restarts
+the server, which ends any online match in progress.
+
 Tags are created only by the `Release` workflow. Cloud sessions cannot push tags or
 delete branches; never try to work around that.
 

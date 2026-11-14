@@ -7,14 +7,17 @@
 // that is replaced whenever something visible changes) through useGameUi(),
 // and call the methods below.
 
-import { ARENA, DT, PALETTE, POWERUPS, FX_KEYS, LENGTHS, makeRng } from '../../shared/config.js';
+import { ARENA, DT, PALETTE, LENGTHS, makeRng } from '../../shared/config.js';
+import { decodeSegment, decodeSnapshot } from '../../shared/protocol.js';
 import { Round } from '../../shared/sim/round.js';
 import { Match } from '../../shared/sim/match.js';
 import { Renderer } from './renderer.js';
 
 const ONLINE_KEYS = [['ArrowLeft', 'ArrowRight'], ['KeyA', 'KeyD']];
-const NO_FX = Object.fromEntries(FX_KEYS.map((k) => [k, 0]));
-const MAX_PADS = 4;
+const MAX_PADS = 4; // pairs of touch buttons that fit on one screen
+const COUNTDOWN_SECONDS = 2.4; // "3, 2, 1" before a round
+const COUNT_STEP = 0.8; // seconds each countdown number stays up
+const ROUND_BREAK_SECONDS = 2.8; // pause between rounds
 
 export class Game {
   constructor({ input, sfx }) {
@@ -140,7 +143,7 @@ export class Game {
     this.hud.roundNo = this.match.roundNo + 1;
     this.state = 'countdown';
     this.paused = false;
-    this.timer = 2.4;
+    this.timer = COUNTDOWN_SECONDS;
     this.count = 0;
     this.acc = 0;
     this.banner = null;
@@ -225,7 +228,7 @@ export class Game {
     this.renderer.reset(this.hud.colors);
     this.draw = this.renderer.hooks();
     this.view = { players: [], items: [], wrap: 0 };
-    for (const g of m.segs) this.draw.segment({ id: g[0] }, g[1], g[2], g[3], g[4], g[5]);
+    for (const seg of m.segs) this.draw.segment(...decodeSegment(seg)); // trails drawn before we joined
     this.state = 'countdown';
     this.count = 0;
     this.paused = false;
@@ -237,32 +240,32 @@ export class Game {
   onlineSnapshot(m) {
     const { view, draw, sfx } = this;
     if (this.mode !== 'online' || !view || this.state === 'idle' || this.state === 'matchEnd') return;
+    const snap = decodeSnapshot(m);
     const first = view.players.length === 0;
-    view.players = m.p.map((a, id) => ({
-      id, x: a[0], y: a[1], angle: a[2], alive: !!a[3], r: a[4],
-      fx: a[5] ? Object.fromEntries(FX_KEYS.map((k, i) => [k, a[5][i]])) : NO_FX,
-    }));
-    view.items = m.it.map((a) => ({ def: POWERUPS[a[0]], x: a[1], y: a[2], life: a[3] }));
-    view.wrap = m.wr;
-    for (const g of m.g) draw.segment({ id: g[0] }, g[1], g[2], g[3], g[4], g[5]);
+    view.players = snap.players;
+    view.items = snap.items;
+    view.wrap = snap.wrap;
+    this.hud.live = snap.points;
+
+    for (const seg of snap.segments) draw.segment(...seg);
     let died = false;
-    for (const e of m.e) {
-      if (e[0] === 'd') {
-        draw.death({ id: e[1], x: e[2], y: e[3] });
+    for (const e of snap.events) {
+      if (e.type === 'death') {
+        draw.death(e.player);
         sfx.death();
         died = true;
-      } else if (e[0] === 'k') {
-        draw.pickup({ id: e[1] }, { x: e[2], y: e[3], def: POWERUPS[e[4]] });
+      } else if (e.type === 'pickup') {
+        draw.pickup(e.player, e.item);
         sfx.pickup();
-      } else if (e[0] === 'c') {
+      } else {
         draw.clear();
         sfx.clear();
       }
     }
-    this.hud.live = m.pts;
-    if (m.ph === 'c') {
+
+    if (snap.countingDown) {
       this.state = 'countdown';
-      this.showCount(m.cd);
+      this.showCount(snap.countdown);
     } else if (this.state === 'countdown') {
       this.state = 'playing';
       this.count = 0;
@@ -270,7 +273,7 @@ export class Game {
       this.publish();
       return;
     } else if (this.state === 'roundEnd') {
-      return;
+      return; // a late snapshot must not undo the round banner
     }
     if (died || first) this.publish();
   }
@@ -293,7 +296,7 @@ export class Game {
   // ---------- Shared ----------
 
   showCount(left) {
-    const n = Math.ceil(left / 0.8);
+    const n = Math.ceil(left / COUNT_STEP);
     if (n === this.count || n <= 0) return;
     this.count = n;
     this.sfx.tick();
@@ -309,7 +312,7 @@ export class Game {
       this.sfx.win();
     } else {
       this.state = 'roundEnd';
-      this.timer = 2.8;
+      this.timer = ROUND_BREAK_SECONDS;
       this.banner = { winner };
       this.sfx.round();
     }

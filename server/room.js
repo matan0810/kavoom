@@ -3,7 +3,8 @@
 // tested with plain arrays standing in for connections.
 
 import { randomUUID } from 'node:crypto';
-import { ARENA, DT, LENGTHS, PALETTE, POWERUPS, BOT_LEVELS, FX_KEYS, MAX_PLAYERS, makeRng } from '../shared/config.js';
+import { ARENA, DT, LENGTHS, PALETTE, BOT_LEVELS, MAX_PLAYERS, makeRng } from '../shared/config.js';
+import { encodeEvent, encodeSnapshot, round1 } from '../shared/protocol.js';
 import { Round } from '../shared/sim/round.js';
 import { Match } from '../shared/sim/match.js';
 
@@ -11,8 +12,6 @@ const COUNTDOWN = 2.4;
 const ROUND_PAUSE = 3;
 const MAX_STEPS_PER_TICK = 8;
 const SETTINGS = { length: Object.keys(LENGTHS), powerups: ['on', 'off'], botLevel: Object.keys(BOT_LEVELS) };
-
-const r1 = (v) => Math.round(v * 10) / 10;
 
 // Control characters, angle brackets, and the invisible characters that can
 // reorder or hide text (so a name cannot be made to look like another one).
@@ -208,11 +207,11 @@ export class Room {
       rng: this.rng,
       powerups: this.settings.powerups === 'on',
       hooks: {
-        segment: (p, x0, y0, x1, y1, r) => this.addSegment(p.id, r1(x0), r1(y0), r1(x1), r1(y1), r),
-        death: (p) => this.events.push(['d', p.id, r1(p.x), r1(p.y)]),
-        pickup: (p, it) => this.events.push(['k', p.id, r1(it.x), r1(it.y), POWERUPS.indexOf(it.def)]),
+        segment: (p, x0, y0, x1, y1, r) => this.addSegment(p.id, round1(x0), round1(y0), round1(x1), round1(y1), r),
+        death: (p) => this.events.push(encodeEvent.death(p)),
+        pickup: (p, it) => this.events.push(encodeEvent.pickup(p, it)),
         clear: () => {
-          this.events.push(['c']);
+          this.events.push(encodeEvent.clear());
           this.pending = [];
           this.segLog = [];
         },
@@ -254,23 +253,15 @@ export class Room {
     };
   }
 
+  // Everything that changed since the last snapshot. The segments move to the
+  // round's log, which is replayed to anyone who joins mid-round.
   snapshot() {
-    const r = this.round;
-    const msg = {
-      t: 's',
-      ph: this.phase === 'countdown' ? 'c' : 'p',
-      cd: r1(Math.max(0, this.timer)),
-      p: r.players.map((p) => {
-        const f = p.fx;
-        const any = FX_KEYS.some((k) => f[k] > 0);
-        return [r1(p.x), r1(p.y), Math.round(p.angle * 1000) / 1000, p.alive ? 1 : 0, p.r, any ? FX_KEYS.map((k) => r1(f[k])) : 0];
-      }),
-      it: r.items.map((it) => [POWERUPS.indexOf(it.def), r1(it.x), r1(it.y), r1(it.life)]),
-      wr: r1(r.wrap),
-      g: this.pending,
-      e: this.events,
-      pts: r.points,
-    };
+    const msg = encodeSnapshot(this.round, {
+      countingDown: this.phase === 'countdown',
+      countdown: this.timer,
+      segments: this.pending,
+      events: this.events,
+    });
     for (const s of this.pending) this.segLog.push(s);
     this.pending = [];
     this.events = [];

@@ -7,7 +7,13 @@ import { SERVER_URL } from '../../shared/config.js';
 import { Net } from '../engine/net.js';
 import { game } from '../engine/index.js';
 
-const ERRORS = { noroom: 'errNoroom', full: 'errFull', busy: 'errBusy' };
+const ERRORS = {
+  noroom: 'errNoroom',
+  full: 'errFull',
+  busy: 'errBusy',
+  locked: 'errLocked',
+  kicked: 'errKicked',
+};
 
 function serverUrl() {
   return SERVER_URL || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
@@ -73,7 +79,7 @@ export function useOnlineRoom(identity) {
     [leave],
   );
 
-  // first: the opening message, { t: 'create' } or { t: 'join', code }.
+  // first: the opening message, { t: 'create' }, { t: 'quick' } or { t: 'join', code }.
   const connect = useCallback(
     async (first) => {
       if (net.current) return;

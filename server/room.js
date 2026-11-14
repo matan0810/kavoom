@@ -15,7 +15,9 @@ const SETTINGS = {
   length: Object.keys(LENGTHS),
   powerups: ['on', 'off'],
   botLevel: Object.keys(BOT_LEVELS),
+  locked: ['off', 'on'], // a locked room takes no new players
 };
+const AUTO_START = 10; // seconds a public room waits once two people are in it
 
 // Control characters, angle brackets, and the invisible characters that can
 // reorder or hide text (so a name cannot be made to look like another one).
@@ -35,13 +37,17 @@ export function cleanName(name) {
 }
 
 export class Room {
-  constructor(code, seed = (Math.random() * 2 ** 32) >>> 0) {
+  // A public room is one that "quick game" puts strangers into. Nobody there is
+  // waiting for a friend, so it starts by itself once two people are in.
+  constructor(code, seed = (Math.random() * 2 ** 32) >>> 0, { isPublic = false } = {}) {
     this.code = code;
+    this.public = isPublic;
+    this.autoStart = null; // seconds until a public room starts, or null
     this.rng = makeRng(seed);
     this.members = [];
     this.nextId = 1;
     this.hostId = 0;
-    this.settings = { length: 'normal', powerups: 'on', botLevel: 'medium' };
+    this.settings = { length: 'normal', powerups: 'on', botLevel: 'medium', locked: 'off' };
     this.state = 'lobby'; // 'lobby' | 'match'
     this.phase = null; // 'countdown' | 'playing' | 'roundEnd'
     this.emptyFor = 0;
@@ -60,8 +66,15 @@ export class Room {
     return 0;
   }
 
+  // Why a newcomer cannot come in right now ('full' or 'locked'), or null if they can.
+  refusal() {
+    if (this.members.length >= MAX_PLAYERS) return 'full';
+    if (this.settings.locked === 'on') return 'locked';
+    return null;
+  }
+
   add(name, color, send) {
-    if (this.members.length >= MAX_PLAYERS) return null;
+    if (this.refusal()) return null;
     const m = {
       id: this.nextId++,
       name: cleanName(name),
@@ -150,6 +163,8 @@ export class Room {
       code: this.code,
       host: this.hostId,
       state: this.state,
+      public: this.public,
+      startsIn: this.autoStart === null ? 0 : Math.ceil(this.autoStart),
       settings: this.settings,
       members: this.members.map((m) => ({
         id: m.id,
@@ -189,7 +204,8 @@ export class Room {
           !host ||
           !lobby ||
           !Object.hasOwn(SETTINGS, msg.key) ||
-          !SETTINGS[msg.key].includes(msg.val)
+          !SETTINGS[msg.key].includes(msg.val) ||
+          (msg.key === 'locked' && this.public)
         )
           return;
         this.settings[msg.key] = msg.val;
@@ -203,6 +219,13 @@ export class Room {
         if (!host || !lobby || !bot) return;
         this.members = this.members.filter((x) => x !== bot);
         break;
+      }
+      case 'kick': {
+        const target = this.members.find((x) => x.id === msg.id && !x.bot);
+        if (!host || !lobby || !target || target === m) return;
+        if (target.send) target.send(JSON.stringify({ t: 'error', code: 'kicked' }));
+        this.remove(target.id);
+        return;
       }
       case 'start':
         if (!host || !lobby || this.members.length < 2) return;
@@ -229,6 +252,7 @@ export class Room {
     }));
     this.match = new Match(this.order.length, LENGTHS[this.settings.length]);
     this.state = 'match';
+    this.autoStart = null;
     this.broadcast(this.info());
     this.startRound();
   }
@@ -308,7 +332,10 @@ export class Room {
 
   tick(dt) {
     this.emptyFor = this.humans().length ? 0 : this.emptyFor + dt;
-    if (this.state !== 'match') return;
+    if (this.state !== 'match') {
+      if (this.public) this.tickAutoStart(dt);
+      return;
+    }
     this.ticks++;
     if (this.phase === 'countdown') {
       this.timer -= dt;
@@ -340,6 +367,16 @@ export class Room {
       this.timer -= dt;
       if (this.timer <= 0) this.startRound();
     }
+  }
+
+  // Public lobby: count down while at least two people are here, and tell the
+  // room each time the number of whole seconds left changes.
+  tickAutoStart(dt) {
+    const before = this.info().startsIn;
+    if (this.humans().length < 2) this.autoStart = null;
+    else this.autoStart = (this.autoStart ?? AUTO_START) - dt;
+    if (this.autoStart !== null && this.autoStart <= 0) return this.start();
+    if (this.info().startsIn !== before) this.broadcast(this.info());
   }
 
   endRound() {

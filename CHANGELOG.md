@@ -15,6 +15,11 @@ breaking changes are major.
 
 ### Added
 - Online rooms have an Invite friends button: on phones it opens the share sheet (WhatsApp, Messages and so on), elsewhere it copies the link.
+- Quick game: one tap puts you in a public room with whoever else is looking for a game. It starts by itself ten seconds after a second player arrives, and you can add bots and start sooner.
+- The host can lock a room's door so nobody new can join, and can remove a player from the lobby.
+
+### Changed
+- Create room is now called Room for friends, next to the new Quick game button.
 
 ### Fixed
 - Sound on iPhones: audio is now switched on from the first touch, as Safari requires.

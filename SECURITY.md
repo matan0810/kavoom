@@ -33,7 +33,8 @@ only in their own browser.
 
 - The per-address caps rely on the `X-Forwarded-For` header, which can be forged. The
   server-wide caps still apply.
-- Rooms have no password. Anyone with the code can join.
+- Rooms have no password. Anyone with the code can join until the host locks the door.
+- Public rooms (quick game) are open to anyone by design.
 - Protection against large denial-of-service attacks depends on Render's infrastructure.
 
 ## Reporting a problem

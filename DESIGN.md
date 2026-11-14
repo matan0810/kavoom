@@ -237,6 +237,11 @@ Nobody can cheat from the browser, and everyone sees the same game.
 
 - Rooms: a 4-letter code. The share link carries the code in the URL hash (removed from
   the address once joined). Up to 6 players, bots included.
+- Quick game: joins the fullest public lobby that has a seat, or opens a new public room.
+  A public room starts by itself 10 seconds after a second person is in it, and cannot be
+  locked. A room made with "Room for friends" is private: reachable only by its code.
+- The host can lock the door (no newcomers; a dropped player still returns with their
+  token) and can remove a bot or a person from the lobby.
 - Host: the creator. Only the host changes settings, adds bots and starts. If the host
   leaves, the role passes on.
 - Broadcast: 60 JSON snapshots a second with heads, power-ups, new trail segments

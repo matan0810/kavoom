@@ -135,6 +135,19 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
     }
   };
 
+  // "Quick game": the fullest public lobby that still has a seat, or a new one.
+  const openPublicRoom = () => {
+    let best = null;
+    for (const r of rooms.values()) {
+      if (!r.public || r.state !== 'lobby' || r.refusal()) continue;
+      if (!best || r.members.length > best.members.length) best = r;
+    }
+    if (best || rooms.size >= LIMITS.rooms) return best;
+    const r = new Room(newCode(), undefined, { isPublic: true });
+    rooms.set(r.code, r);
+    return r;
+  };
+
   const server = http.createServer(async (req, res) => {
     try {
       const secure = req.headers['x-forwarded-proto'] === 'https';
@@ -232,13 +245,17 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
           if (msg.t === 'leave') room = member = null;
           return;
         }
-        if (!['create', 'join', 'rejoin'].includes(msg.t)) return;
+        if (!['create', 'quick', 'join', 'rejoin'].includes(msg.t)) return;
         if (!mayJoin(ip)) return fail('busy');
         const code = typeof msg.code === 'string' ? msg.code.toUpperCase() : '';
         if (msg.t === 'create') {
           if (rooms.size >= LIMITS.rooms) return fail('busy');
           const r = new Room(newCode());
           rooms.set(r.code, r);
+          enter(r, r.add(msg.name, msg.color, send));
+        } else if (msg.t === 'quick') {
+          const r = openPublicRoom();
+          if (!r) return fail('busy');
           enter(r, r.add(msg.name, msg.color, send));
         } else {
           const r = rooms.get(code);
@@ -247,6 +264,7 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
             msg.t === 'rejoin' && typeof msg.token === 'string'
               ? r.reconnect(msg.token, send)
               : null;
+          if (!back && r.refusal()) return fail(r.refusal());
           enter(r, back || r.add(msg.name, msg.color, send));
         }
       } catch (e) {

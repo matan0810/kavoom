@@ -169,5 +169,82 @@ test('setting keys that are not settings are ignored without an error', () => {
   for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
     assert.doesNotThrow(() => room.handle(room.hostId, { t: 'set', key, val: 'x' }));
   }
-  assert.deepEqual(room.settings, { length: 'normal', powerups: 'on', botLevel: 'medium' });
+  assert.equal(room.settings.length, 'normal');
+  assert.equal(Object.keys(room.settings).length, 4);
+});
+
+test('a locked room takes no newcomers, but a player who dropped can still come back', () => {
+  const { room, a, b, mb } = setup();
+  room.handle(mb.id, { t: 'set', key: 'locked', val: 'on' });
+  assert.equal(room.settings.locked, 'off', 'only the host locks');
+  room.handle(room.hostId, { t: 'set', key: 'locked', val: 'on' });
+  assert.equal(a.last('room').settings.locked, 'on');
+  assert.equal(room.refusal(), 'locked');
+  assert.equal(room.add('C', 3, client().send), null);
+  assert.equal(room.members.length, 2);
+
+  room.handle(room.hostId, { t: 'start' });
+  room.disconnect(mb.id);
+  assert.ok(
+    room.reconnect(b.last('joined').token, client().send),
+    'the token still opens the door',
+  );
+});
+
+test('the host can remove a player from the lobby, and nobody else can', () => {
+  const { room, a, b, ma, mb } = setup();
+  room.handle(mb.id, { t: 'kick', id: ma.id });
+  assert.equal(room.members.length, 2, 'a guest cannot remove the host');
+  room.handle(ma.id, { t: 'kick', id: ma.id });
+  assert.equal(room.members.length, 2, 'the host cannot remove themselves');
+  room.handle(ma.id, { t: 'kick', id: mb.id });
+  assert.deepEqual(
+    room.members.map((m) => m.id),
+    [ma.id],
+  );
+  assert.equal(b.last('error').code, 'kicked');
+  assert.equal(a.last('room').members.length, 1);
+});
+
+test('nobody is removed once the match is on', () => {
+  const { room, ma, mb } = setup();
+  room.handle(ma.id, { t: 'start' });
+  room.handle(ma.id, { t: 'kick', id: mb.id });
+  assert.equal(room.members.length, 2);
+});
+
+test('a public room starts by itself ten seconds after a second person arrives', () => {
+  const room = new Room('OPEN', 3, { isPublic: true });
+  const a = client();
+  const b = client();
+  room.add('A', 0, a.send);
+  run(room, 15);
+  assert.equal(room.state, 'lobby', 'one person alone waits');
+  assert.equal(a.last('room').startsIn, 0);
+  assert.equal(a.last('room').public, true);
+
+  const mb = room.add('B', 1, b.send);
+  run(room, 3);
+  assert.equal(a.last('room').startsIn, 7);
+  room.disconnect(mb.id);
+  run(room, 1);
+  assert.equal(a.last('room').startsIn, 0, 'the count stops when they leave');
+
+  room.add('B', 1, b.send);
+  run(room, 9);
+  assert.equal(room.state, 'lobby');
+  run(room, 1.1);
+  assert.equal(room.state, 'match');
+  assert.ok(b.last('round'));
+});
+
+test('a public room cannot be locked, and a private one never starts by itself', () => {
+  const open = new Room('OPEN', 3, { isPublic: true });
+  open.add('A', 0, client().send);
+  open.handle(open.hostId, { t: 'set', key: 'locked', val: 'on' });
+  assert.equal(open.settings.locked, 'off');
+
+  const { room } = setup();
+  run(room, 30);
+  assert.equal(room.state, 'lobby');
 });

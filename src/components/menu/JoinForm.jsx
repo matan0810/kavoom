@@ -1,4 +1,5 @@
-// Online tab, before joining: create a room, or type a four letter code.
+// Online tab, before joining: a quick game with whoever is around, a room of
+// your own to invite friends to, or a friend's four letter code.
 
 import { useState } from 'react';
 import { LINKED_ROOM } from '../../state/settings.js';
@@ -16,6 +17,15 @@ export function JoinForm({ online }) {
       <button
         type="button"
         className="btn primary big"
+        disabled={online.busy}
+        onClick={() => online.connect({ t: 'quick' })}
+      >
+        {t('quickGame')}
+      </button>
+      <p className="hint">{t('quickGameHint')}</p>
+      <button
+        type="button"
+        className="btn"
         disabled={online.busy}
         onClick={() => online.connect({ t: 'create' })}
       >

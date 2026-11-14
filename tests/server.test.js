@@ -235,3 +235,61 @@ test('a player who rejoins keeps the seat when the old connection finally closes
     a.close();
     b2.close();
   }));
+
+const join = async (port, first) => {
+  const { ws } = await connect(port);
+  const answer = Promise.race([nextMessage(ws, 'joined'), nextMessage(ws, 'error')]);
+  ws.send(JSON.stringify(first));
+  return { ws, msg: await answer };
+};
+
+test('quick game puts strangers in the same public room and skips private ones', () =>
+  withServer(async (port, app) => {
+    const priv = await join(port, { t: 'create', name: 'P' });
+    const a = await join(port, { t: 'quick', name: 'A' });
+    const b = await join(port, { t: 'quick', name: 'B' });
+    assert.notEqual(a.msg.code, priv.msg.code);
+    assert.equal(b.msg.code, a.msg.code);
+    assert.equal(app.rooms.size, 2);
+    assert.equal(app.rooms.get(a.msg.code).public, true);
+    assert.equal(app.rooms.get(priv.msg.code).public, false);
+
+    // Once that room is playing, the next quick game opens a fresh one.
+    app.rooms.get(a.msg.code).start();
+    const c = await join(port, { t: 'quick', name: 'C' });
+    assert.notEqual(c.msg.code, a.msg.code);
+    for (const x of [priv, a, b, c]) x.ws.close();
+  }));
+
+test('a locked room answers "locked" and a full one "full"', () =>
+  withServer(async (port, app) => {
+    const host = await join(port, { t: 'create', name: 'H' });
+    const { code } = host.msg;
+    host.ws.send(JSON.stringify({ t: 'set', key: 'locked', val: 'on' }));
+    await new Promise((r) => setTimeout(r, 30));
+    const late = await join(port, { t: 'join', code });
+    assert.deepEqual(late.msg, { t: 'error', code: 'locked' });
+
+    host.ws.send(JSON.stringify({ t: 'set', key: 'locked', val: 'off' }));
+    for (let i = 0; i < 5; i++) host.ws.send(JSON.stringify({ t: 'addBot' }));
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(app.rooms.get(code).members.length, 6);
+    const extra = await join(port, { t: 'join', code });
+    assert.deepEqual(extra.msg, { t: 'error', code: 'full' });
+    for (const x of [host, late, extra]) x.ws.close();
+  }));
+
+test('a removed player is out of the room and their connection can join again elsewhere', () =>
+  withServer(async (port, app) => {
+    const host = await join(port, { t: 'create', name: 'H' });
+    const guest = await join(port, { t: 'join', code: host.msg.code, name: 'G' });
+    const told = nextMessage(guest.ws, 'error');
+    host.ws.send(JSON.stringify({ t: 'kick', id: guest.msg.you }));
+    assert.equal((await told).code, 'kicked');
+    assert.equal(app.rooms.get(host.msg.code).members.length, 1);
+    const again = nextMessage(guest.ws, 'joined');
+    guest.ws.send(JSON.stringify({ t: 'create', name: 'G' }));
+    assert.notEqual((await again).code, host.msg.code);
+    host.ws.close();
+    guest.ws.close();
+  }));

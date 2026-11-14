@@ -5,6 +5,8 @@ import { MAX_PLAYERS, PALETTE } from '../../../shared/config.js';
 import { useT } from '../../state/SettingsContext.jsx';
 import { MatchSettings } from './MatchSettings.jsx';
 import { ShareLink } from './ShareLink.jsx';
+import { Segmented } from '../ui/Segmented.jsx';
+import { SettingRow } from '../ui/SettingRow.jsx';
 
 function Member({ member, room, online }) {
   const t = useT();
@@ -12,12 +14,13 @@ function Member({ member, room, online }) {
   let tag = null;
   if (member.id === room.host) tag = <span className="tag">{t('host')}</span>;
   else if (!member.on) tag = <span className="tag">{t('away')}</span>;
-  else if (member.bot && online.isHost && room.state === 'lobby') {
+  else if (online.isHost && room.state === 'lobby') {
+    // The host can clear a seat before the match: a bot, or a person.
     tag = (
       <button
         type="button"
         className="btn small"
-        onClick={() => online.send({ t: 'removeBot', id: member.id })}
+        onClick={() => online.send({ t: member.bot ? 'removeBot' : 'kick', id: member.id })}
       >
         {t('remove')}
       </button>
@@ -33,6 +36,15 @@ function Member({ member, room, online }) {
       {tag}
     </li>
   );
+}
+
+// The one line under the settings that says what the room is waiting for.
+function lobbyHint(t, room, isHost) {
+  if (room.state !== 'lobby') return t('matchRunning');
+  if (room.startsIn > 0) return t('startsIn', room.startsIn);
+  if (room.public && room.members.length < 2) return t('lookingForPlayers');
+  if (!isHost) return t('waitingHost');
+  return room.members.length < 2 ? t('needTwo') : '';
 }
 
 export function RoomLobby({ online }) {
@@ -65,9 +77,24 @@ export function RoomLobby({ online }) {
         onChange={(key, val) => online.send({ t: 'set', key, val })}
       />
 
-      {!inLobby && <p className="hint">{t('matchRunning')}</p>}
-      {inLobby && !isHost && <p className="hint">{t('waitingHost')}</p>}
-      {inLobby && isHost && count < 2 && <p className="hint">{t('needTwo')}</p>}
+      {!room.public && (
+        <SettingRow label={t('roomDoor')}>
+          <Segmented
+            label={t('roomDoor')}
+            options={[
+              ['off', t('doorOpen')],
+              ['on', t('doorLocked')],
+            ]}
+            value={room.settings.locked}
+            disabled={!isHost || !inLobby}
+            onChange={(val) => online.send({ t: 'set', key: 'locked', val })}
+          />
+        </SettingRow>
+      )}
+
+      <p className="hint" role="status">
+        {lobbyHint(t, room, isHost)}
+      </p>
 
       <div className="room-actions">
         {inLobby && isHost && (

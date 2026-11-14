@@ -164,7 +164,7 @@ async function main() {
   await host.goto(url);
   await host.click('.tabs button:nth-child(2)');
   await host.fill('.menu-grid.online .field', 'Dana');
-  await host.click('.btn.primary.big');
+  await host.click('.block > .btn:not(.primary)'); // room for friends
   await host.waitForSelector('.room-code');
   const code = (await text(host, '.room-code')).trim();
   assert.match(code, /^[A-Z]{4}$/);
@@ -197,6 +197,23 @@ async function main() {
   assert.equal(shared.url, `${url}#${code}`);
   assert.ok(shared.text.includes(code));
   step('online: the invite button shares a link with the room code');
+
+  // The host locks the door: a third player is turned away. Then removes and re-admits the guest.
+  await host.click('.seg[aria-label="Room door"] button:nth-child(2)');
+  const third = await open({ viewport: { width: 900, height: 700 }, locale: 'en-US' }, 'third');
+  await third.goto(`${url}#${code}`);
+  await third.click('.join-row .btn');
+  await third.waitForFunction(() =>
+    /locked/i.test(document.querySelector('[role=status]')?.textContent || ''),
+  );
+  assert.equal(await third.$('.room-code'), null);
+  await host.click('.seg[aria-label="Room door"] button:nth-child(1)');
+  await host.click('.member:nth-child(2) .btn.small'); // remove the guest
+  await guest.waitForSelector('.join-row');
+  assert.match(await text(guest, '.block [role=status]'), /המארח הוציא/);
+  await guest.click('.join-row .btn');
+  await guest.waitForSelector('.room-code');
+  step('online: locked door turns newcomers away; the host can remove a player');
 
   await host.click('.room-actions .btn.primary');
   await guest.waitForSelector('.game');
@@ -231,8 +248,13 @@ async function main() {
   await host.click('.side-actions .btn:last-child');
   await host.click('.overlay-actions .btn:last-child');
   await settle(host, 400);
-  await host.click('.btn.primary.big'); // a new room
+  await host.click('.btn.primary.big'); // quick game: a public room
   await host.waitForSelector('.room-code');
+  assert.equal(
+    await host.$('.setting .seg[aria-label="Room door"]'),
+    null,
+    'no lock on a public room',
+  );
   await host.goBack();
   await settle(host, 400);
   assert.ok(await host.$('.join-row'), 'Back in a lobby leaves the room');

@@ -4,6 +4,7 @@ services:
     name: kavoom
     runtime: node
     plan: free
+    branch: main # production only; dev never deploys
     region: frankfurt # fixed when the service is created; see README
     buildCommand: npm ci
     startCommand: npm start

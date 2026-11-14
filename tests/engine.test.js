@@ -257,3 +257,43 @@ test('listeners hear about changes and can unsubscribe', () => {
   game.stop();
   assert.equal(heard, before);
 });
+
+test('a knockout buzzes only for a human on this device', () => {
+  let buzz = 0;
+  const haptics = { knockout: () => buzz++ };
+  const game = new Game({ input: makeInput(), sfx: quiet, haptics });
+  game.onlineRound(roundMsg(), 7); // we are player 0
+  game.onlineSnapshot(snap());
+  game.onlineSnapshot(snap({ e: [['d', 1, 300, 200]] }));
+  assert.equal(buzz, 0, 'a rival going out is not our buzz');
+  game.onlineSnapshot(snap({ e: [['d', 0, 100, 100]] }));
+  assert.equal(buzz, 1);
+
+  const local = new Game({ input: makeInput(), sfx: quiet, haptics });
+  local.startLocal(setup(bots(2)));
+  for (let i = 0; i < 20000 && local.ui.state !== 'roundEnd'; i++) local.frame(0.1);
+  assert.equal(buzz, 1, 'bots never buzz');
+});
+
+test('a finished match is reported once, with whether this device won', () => {
+  const ends = [];
+  const game = new Game({ input: makeInput(), sfx: quiet });
+  game.onMatchEnd = (r) => ends.push(r);
+  game.onlineRound(roundMsg(), 9); // we are player 1
+  game.onlineRoundEnd({ winner: 0, scores: [1, 0], champion: -1, rounds: 1 });
+  assert.deepEqual(ends, [], 'a round is not a match');
+  game.onlineRoundEnd({ winner: 0, scores: [5, 1], champion: 0, rounds: 6 });
+  assert.deepEqual(ends, [{ won: false }]);
+
+  // Locally there is a "me" only when exactly one human plays.
+  const solo = new Game({ input: makeInput(), sfx: quiet });
+  solo.startLocal(setup([{ name: 'Ann', color: '#f00', human: true, keys: [] }, ...bots(1)]));
+  assert.equal(solo.myPlayer(), 0);
+  const two = new Game({ input: makeInput(), sfx: quiet });
+  const human = (name) => ({ name, color: '#f00', human: true, keys: [] });
+  two.startLocal(setup([human('A'), human('B')]));
+  assert.equal(two.myPlayer(), -1);
+  const none = new Game({ input: makeInput(), sfx: quiet });
+  none.startLocal(setup(bots(2)));
+  assert.equal(none.myPlayer(), -1);
+});

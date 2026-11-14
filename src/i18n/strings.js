@@ -59,7 +59,7 @@ const STRINGS = {
   moreSettings: { he: 'קול ומסך', en: 'Sound & display' },
   sound: { he: 'צליל', en: 'Sound' },
   volume: { he: 'עוצמה', en: 'Volume' },
-  shake: { he: 'רעידת מסך', en: 'Screen shake' },
+  shake: { he: 'רעידות', en: 'Shake and vibration' },
   pads: { he: 'כפתורי מגע', en: 'Touch buttons' },
   fullscreen: { he: 'מסך מלא', en: 'Full screen' },
   close: { he: 'סגור', en: 'Close' },
@@ -96,6 +96,10 @@ const STRINGS = {
   you: { he: 'אתה', en: 'You' },
   yourName: { he: 'השם שלך', en: 'Your name' },
   player: { he: 'שחקן', en: 'Player' },
+  record: (wins, matches, best) => ({
+    he: `השיא שלך: ${wins} ניצחונות מתוך ${matches} משחקים · רצף שיא ${best}`,
+    en: `Your record: ${wins} wins in ${matches} matches · best streak ${best}`,
+  }),
   quickGame: { he: 'משחק מהיר', en: 'Quick game' },
   quickGameHint: {
     he: 'מצטרפים למי שמחפש משחק עכשיו.',

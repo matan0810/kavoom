@@ -230,6 +230,12 @@ button.dot:hover {
   gap: 4px;
 }
 
+/* The player's record: a quiet last line under everything else. */
+.record {
+  text-align: center;
+  padding-bottom: 8px;
+}
+
 /* ---------- Online ---------- */
 .field.code {
   text-transform: uppercase;

@@ -17,6 +17,8 @@ breaking changes are major.
 - Online rooms have an Invite friends button: on phones it opens the share sheet (WhatsApp, Messages and so on), elsewhere it copies the link.
 - Quick game: one tap puts you in a public room with whoever else is looking for a game. It starts by itself ten seconds after a second player arrives, and you can add bots and start sooner.
 - The host can lock a room's door so nobody new can join, and can remove a player from the lobby.
+- Your record on this device (wins, matches, best winning streak) is shown at the bottom of the menu. It counts online matches and matches against bots.
+- Phones that support it vibrate briefly when you are knocked out. It follows the Shake and vibration setting.
 
 ### Changed
 - Create room is now called Room for friends, next to the new Quick game button.

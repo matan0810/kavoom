@@ -3,10 +3,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { PALETTE } from '../shared/config.js';
-import { game, sfx } from './engine/index.js';
+import { game, haptics, sfx } from './engine/index.js';
 import { useBackLayer } from './hooks/useBackLayer.js';
 import { useGameUi } from './hooks/useGameUi.js';
 import { useOnlineRoom } from './hooks/useOnlineRoom.js';
+import { useStats } from './hooks/useStats.js';
 import { useSettings } from './state/SettingsContext.jsx';
 import { MenuScreen } from './components/menu/MenuScreen.jsx';
 import { GameScreen } from './components/game/GameScreen.jsx';
@@ -17,6 +18,7 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matc
 export function App() {
   const { settings, t, colorName } = useSettings();
   const ui = useGameUi();
+  const stats = useStats();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const inGame = ui.state !== 'idle';
 
@@ -42,6 +44,7 @@ export function App() {
     sfx.enabled = settings.sound === 'on';
     sfx.volume = settings.volume;
     game.renderer.calm = reducedMotion || settings.shake === 'off';
+    haptics.enabled = settings.shake === 'on';
   }, [settings.sound, settings.volume, settings.shake]);
 
   const startLocal = () => {
@@ -66,6 +69,7 @@ export function App() {
       <MenuScreen
         online={online}
         identity={identity}
+        stats={stats}
         onStartLocal={startLocal}
         onOpenSettings={() => setSettingsOpen(true)}
       />

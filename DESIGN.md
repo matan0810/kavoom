@@ -39,7 +39,7 @@ src/engine/              plain JavaScript, no React:
   net.js                   WebSocket client with automatic rejoin
   backButton.js            browser Back button handling
   index.js                 the single game, input and sound objects
-src/state/               saved settings and the context that hands them to components
+src/state/               saved settings, the player's record, and the settings context
 src/hooks/               useGameUi, useOnlineRoom, useBackLayer, useAnimationFrame, useMediaQuery,
                          useWakeLock
 src/i18n/strings.js      Hebrew and English strings
@@ -228,6 +228,11 @@ Touch:
 - Language: Hebrew for browsers that prefer Hebrew or clocks set to Israel, English
   otherwise. A choice made in the menu is remembered.
 - Settings are stored in `localStorage` inside try/catch, and the game works without it.
+- Record: matches, wins and winning streaks are kept in `localStorage` and shown as one line
+  under the menu. A match counts when the device has one clear player: any online match, or a
+  local match with exactly one human.
+- A knockout of this device's player vibrates the phone for 120 ms where the browser supports
+  it, under the same setting as the screen shake.
 
 ## 10. Online
 

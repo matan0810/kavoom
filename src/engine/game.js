@@ -23,9 +23,11 @@ const COUNT_STEP = 0.8; // seconds each countdown number stays up
 const ROUND_BREAK_SECONDS = 2.8; // pause between rounds
 
 export class Game {
-  constructor({ input, sfx }) {
+  constructor({ input, sfx, haptics = null }) {
     this.input = input;
     this.sfx = sfx;
+    this.haptics = haptics;
+    this.onMatchEnd = null; // called with { won } when a match that has a "me" ends
     this.renderer = new Renderer(ARENA.w, ARENA.h);
     this.listeners = new Set();
 
@@ -133,6 +135,7 @@ export class Game {
         death: (p) => {
           draw.death(p);
           sfx.death();
+          if (setup.players[p.id].human) this.haptics?.knockout();
           this.publish();
         },
         pickup: (p, it) => {
@@ -261,6 +264,7 @@ export class Game {
       if (e.type === 'death') {
         draw.death(e.player);
         sfx.death();
+        if (e.player.id === this.myIndex) this.haptics?.knockout();
         died = true;
       } else if (e.type === 'pickup') {
         draw.pickup(e.player, e.item);
@@ -322,6 +326,8 @@ export class Game {
       this.state = 'matchEnd';
       this.result = { champion, rounds };
       this.sfx.win();
+      const me = this.myPlayer();
+      if (me >= 0 && this.onMatchEnd) this.onMatchEnd({ won: champion === me });
     } else {
       this.state = 'roundEnd';
       this.timer = ROUND_BREAK_SECONDS;
@@ -329,6 +335,14 @@ export class Game {
       this.sfx.round();
     }
     this.publish();
+  }
+
+  // The one player this device plays as, or -1: online that is our seat, locally
+  // it is the human when there is exactly one (with two on a device, nobody is "me").
+  myPlayer() {
+    if (this.mode === 'online') return this.myIndex;
+    const humans = this.setup.players.map((p, i) => (p.human ? i : -1)).filter((i) => i >= 0);
+    return humans.length === 1 ? humans[0] : -1;
   }
 
   // True when the key is one a player steers with, so the page should not scroll on it.

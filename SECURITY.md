@@ -5,12 +5,13 @@
 Nothing. There are no accounts, no database and no logs with player data. An online
 player's name and colour live in server memory only while the room is open. The server
 does not record IP addresses. Each player's settings (language, keys, colours) are kept
-only in their own browser.
+only in their own browser. The service worker keeps a copy of the
+game's own files on the device and nothing else.
 
 ## What is protected
 
 - **Files:** the server serves only the built site in `dist/`: `index.html`, `favicon.svg`,
-  `manifest.webmanifest` and the `assets/` and `icons/` folders, checked after the path is
+  `manifest.webmanifest`, `sw.js` and the `assets/` and `icons/` folders, checked after the path is
   resolved. Server code, sources, tests and project files are never served.
 - **Headers:** a Content-Security-Policy that allows scripts only from the site itself and
   connections only to the site's own address, no framing, `nosniff`, same-origin resource

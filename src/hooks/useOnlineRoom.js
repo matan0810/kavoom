@@ -15,6 +15,25 @@ const ERRORS = {
   kicked: 'errKicked',
 };
 
+const WAKE_UP_MS = 90000; // a sleeping free server takes about a minute to answer
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Open the connection, retrying while the server may still be waking up.
+// Returns true once connected, false when it is time to give up.
+async function openPatiently(net, setStatus) {
+  const giveUpAt = Date.now() + WAKE_UP_MS;
+  for (;;) {
+    try {
+      await net.open();
+      return true;
+    } catch {
+      if (net.done || !navigator.onLine || Date.now() > giveUpAt) return false;
+      setStatus('waking');
+      await sleep(2000);
+    }
+  }
+}
+
 function serverUrl() {
   return SERVER_URL || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 }
@@ -100,13 +119,12 @@ export function useOnlineRoom(identity) {
       );
       net.current = mine;
       game.send = (msg) => mine.send(msg);
-      try {
-        await mine.open();
+      if (await openPatiently(mine, setStatus)) {
         setStatus('');
         mine.send({ ...first, ...latestIdentity.current });
-      } catch {
+      } else if (net.current === mine) {
         net.current = null;
-        setStatus('noServer');
+        setStatus(navigator.onLine ? 'noServer' : 'offline');
       }
       setBusy(false);
     },

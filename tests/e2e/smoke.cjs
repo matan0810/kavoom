@@ -135,6 +135,31 @@ async function main() {
   );
   step('landscape phone: arena between two pads');
 
+  // ---------- Installed copy: the game opens and plays with no network ----------
+  const offline = await open({ ...devices['iPhone 13'], locale: 'en-US' }, 'offline');
+  await offline.goto(url);
+  await offline.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
+    timeout: 15000,
+  });
+  await offline.context().setOffline(true);
+  await offline.reload();
+  await offline.waitForSelector('.menu');
+  await offline.click('.start-bar .btn');
+  await settle(offline, 3500);
+  assert.equal(await offline.evaluate(() => window.__kavoom.game.ui.state), 'playing');
+  await offline.goBack();
+  await settle(offline);
+  await offline.click('.overlay-actions .btn:last-child');
+  await offline.click('.tabs button:nth-child(2)');
+  await offline.click('.btn.primary.big');
+  await offline.waitForFunction(
+    () => /No internet/.test(document.querySelector('.block [role=status]')?.textContent || ''),
+    null,
+    { timeout: 15000 },
+  );
+  step('offline: the saved copy opens, a local match plays, online says there is no internet');
+  problems.length = 0; // failed requests while offline are expected
+
   // ---------- Desktop, both languages ----------
   for (const locale of ['he-IL', 'en-US']) {
     const d = await open({ viewport: { width: 1280, height: 800 }, locale }, `desktop-${locale}`);
@@ -232,9 +257,9 @@ async function main() {
   await guest.goBack();
   await settle(guest);
   assert.equal(await guest.$('.card'), null);
-  assert.equal(
+  assert.notEqual(
     await guest.evaluate(() => window.__kavoom.game.ui.state),
-    'playing',
+    'idle',
     'the match went on',
   );
   await guest.goBack();

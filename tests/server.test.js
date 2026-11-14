@@ -71,6 +71,12 @@ test('serves the game with security headers', () =>
     assert.match(js.headers['cache-control'], /immutable/);
     assert.equal((await get(port, style[1])).status, 200);
     assert.equal(res.headers['cache-control'], 'no-cache');
+    // The service worker must never be cached for long, or an old one could not be replaced.
+    const sw = await get(port, '/sw.js');
+    assert.equal(sw.status, 200);
+    assert.match(sw.headers['content-type'], /text\/javascript/);
+    assert.equal(sw.headers['cache-control'], 'no-cache');
+    assert.match(res.headers['content-security-policy'], /worker-src 'self'/);
   }));
 
 test('a malformed URL is a 400 and does not take the server down', () =>

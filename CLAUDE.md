@@ -143,7 +143,7 @@ CHANGELOG if it matters to players. Security updates are worth a `patch` release
 
 ```
 index.html, vite.config.js    Vite entry page and build settings
-public/                       copied as they are: favicon.svg, icons/, manifest.webmanifest
+public/                       copied as they are: favicon.svg, icons/, manifest.webmanifest, sw.js
 eslint.config.js, .prettierrc.json   lint rules and code layout, enforced in CI
 shared/config.js              constants, VERSION, palette, power-ups, SERVER_URL
 shared/protocol.js            the online wire format: server encodes, browser decodes

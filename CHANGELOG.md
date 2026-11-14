@@ -12,6 +12,7 @@ breaking changes are major.
 - A connection that stops reading is closed once 1 MB of game data is waiting for it, so it cannot exhaust the server's memory.
 - Names can no longer contain invisible or text-reordering characters used to imitate another player.
 - The content policy now names the site's own WebSocket address (needed by older Safari) and a same-origin resource policy header was added.
+- The content policy allows a service worker from the site itself only (worker-src).
 
 ### Added
 - Online rooms have an Invite friends button: on phones it opens the share sheet (WhatsApp, Messages and so on), elsewhere it copies the link.
@@ -19,6 +20,8 @@ breaking changes are major.
 - The host can lock a room's door so nobody new can join, and can remove a player from the lobby.
 - Your record on this device (wins, matches, best winning streak) is shown at the bottom of the menu. It counts online matches and matches against bots.
 - Phones that support it vibrate briefly when you are knocked out. It follows the Shake and vibration setting.
+- The game is kept on your device after the first visit: it opens at once, can be added to the home screen, and one-device play works with no internet.
+- While the server is waking up, the online tab says so and keeps trying for a minute and a half instead of failing after five seconds.
 
 ### Changed
 - Create room is now called Room for friends, next to the new Quick game button.

@@ -23,7 +23,8 @@ The browser side is a React app, built by Vite into `dist/`. The Node server ser
 
 ```
 index.html               Vite entry page (loads src/main.jsx)
-public/                  files copied as they are: favicon.svg, icons/, manifest.webmanifest
+public/                  files copied as they are: favicon.svg, icons/, manifest.webmanifest,
+                         sw.js (service worker: offline copy of the game)
 shared/config.js         constants: version, arena, physics, palette, keys, power-ups
 shared/protocol.js       the online wire format (server encodes, browser decodes)
 shared/sim/grid.js       occupancy grid for collisions
@@ -233,6 +234,17 @@ Touch:
   local match with exactly one human.
 - A knockout of this device's player vibrates the phone for 120 ms where the browser supports
   it, under the same setting as the screen shake.
+
+### Installed copy
+
+`public/sw.js` is a service worker that saves the page and its files on the device. The page
+is taken from the network when it answers within 2.5 seconds (so a release shows on the next
+visit) and from the saved copy otherwise; hashed files in `assets/` always come from the
+saved copy. Local play therefore works offline. Fonts come from Google and fall back to the
+system font offline. Online play is never cached.
+
+The free server sleeps after 15 idle minutes. The page pings `/healthz` when it opens, and
+connecting to a room retries for 90 seconds with a "waking up" message.
 
 ## 10. Online
 

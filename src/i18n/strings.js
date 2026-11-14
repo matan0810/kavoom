@@ -133,6 +133,14 @@ const STRINGS = {
   waitingHost: { he: 'ממתינים שהמארח יתחיל.', en: 'Waiting for the host to start.' },
   matchRunning: { he: 'משחק רץ כרגע בחדר.', en: 'A match is running in this room.' },
   connecting: { he: 'מתחבר…', en: 'Connecting…' },
+  waking: {
+    he: 'השרת מתעורר, זה לוקח בערך דקה…',
+    en: 'The server is waking up, this takes about a minute…',
+  },
+  offline: {
+    he: 'אין חיבור לאינטרנט. משחק במכשיר אחד עובד גם בלי רשת.',
+    en: 'No internet connection. One-device play works without it.',
+  },
   reconnecting: { he: 'החיבור נפל, מתחבר מחדש…', en: 'Connection lost, reconnecting…' },
   lost: { he: 'החיבור לשרת אבד.', en: 'Lost connection to the server.' },
   noServer: {

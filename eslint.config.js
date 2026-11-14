@@ -39,6 +39,7 @@ export default [
       'react/prop-types': 'off', // no TypeScript or PropTypes in this project
     },
   },
+  { files: ['public/sw.js'], languageOptions: { globals: globals.serviceworker } },
   {
     // Shared by browser and server: must not reach for either one's globals.
     files: ['shared/**/*.js'],

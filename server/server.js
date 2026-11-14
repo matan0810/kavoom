@@ -40,7 +40,7 @@ const TYPES = {
 
 // Only these files and folders inside dist/ are ever served. Everything else
 // (server code, sources, package files, tests, .git) is a 404.
-const PUBLIC_FILES = new Set(['index.html', 'favicon.svg', 'manifest.webmanifest']);
+const PUBLIC_FILES = new Set(['index.html', 'favicon.svg', 'manifest.webmanifest', 'sw.js']);
 const PUBLIC_DIRS = ['assets/', 'icons/'];
 // Files in assets/ carry a hash of their content in the name, so they never change.
 const CACHE_FOREVER = 'public, max-age=31536000, immutable';
@@ -60,6 +60,7 @@ function contentSecurityPolicy(host) {
     "img-src 'self' data:",
     `connect-src 'self'${ownSocket}`,
     "manifest-src 'self'",
+    "worker-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",

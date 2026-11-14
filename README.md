@@ -71,7 +71,7 @@ on phones.
 
 ## License
 
-No license has been chosen yet, so all rights are reserved by the repository owner.
+[MIT](LICENSE).
 
 The Heebo and Secular One fonts come from Google Fonts under the SIL Open Font License.
 The ws library is under the MIT license.

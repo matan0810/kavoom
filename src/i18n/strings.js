@@ -100,6 +100,11 @@ const STRINGS = {
   joinRoom: { he: 'הצטרף', en: 'Join' },
   roomCode: { he: 'קוד חדר', en: 'Room code' },
   room: (code) => ({ he: `חדר ${code}`, en: `Room ${code}` }),
+  share: { he: 'הזמן חברים', en: 'Invite friends' },
+  shareText: (code) => ({
+    he: `בואו לשחק איתי KAVOOM! קוד החדר: ${code}`,
+    en: `Come play KAVOOM with me! Room code: ${code}`,
+  }),
   copyLink: { he: 'העתק קישור', en: 'Copy link' },
   copied: { he: 'הועתק', en: 'Copied' },
   host: { he: 'מארח', en: 'Host' },

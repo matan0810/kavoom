@@ -13,6 +13,9 @@ breaking changes are major.
 - Names can no longer contain invisible or text-reordering characters used to imitate another player.
 - The content policy now names the site's own WebSocket address (needed by older Safari) and a same-origin resource policy header was added.
 
+### Added
+- Online rooms have an Invite friends button: on phones it opens the share sheet (WhatsApp, Messages and so on), elsewhere it copies the link.
+
 ### Fixed
 - Sound on iPhones: audio is now switched on from the first touch, as Safari requires.
 - Key names in the menu (Space, Shift, Ctrl, Alt) now follow the chosen language instead of always being Hebrew.

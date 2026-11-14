@@ -186,6 +186,18 @@ async function main() {
   ]);
   step('online: create, join through the link, both see each other');
 
+  // Invite button: the phone gets the share sheet, the desktop copies the link.
+  await guest.evaluate(() => {
+    navigator.share = (data) => ((window.__shared = data), Promise.resolve());
+  });
+  await guest.click('.tabs button:nth-child(1)'); // re-render so the button sees navigator.share
+  await guest.click('.tabs button:nth-child(2)');
+  await guest.click('.room-head .btn');
+  const shared = await guest.evaluate(() => window.__shared);
+  assert.equal(shared.url, `${url}#${code}`);
+  assert.ok(shared.text.includes(code));
+  step('online: the invite button shares a link with the room code');
+
   await host.click('.room-actions .btn.primary');
   await guest.waitForSelector('.game');
   await settle(guest, 3500);

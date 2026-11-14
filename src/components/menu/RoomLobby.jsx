@@ -1,43 +1,10 @@
 // Online tab, inside a room: the code, who is here, the room's settings,
 // and the host's buttons.
 
-import { useState } from 'react';
 import { MAX_PLAYERS, PALETTE } from '../../../shared/config.js';
 import { useT } from '../../state/SettingsContext.jsx';
 import { MatchSettings } from './MatchSettings.jsx';
-
-function CopyLink({ code }) {
-  const t = useT();
-  const [state, setState] = useState('idle'); // idle | copied | manual
-  const link = `${location.origin}${location.pathname}#${code}`;
-  const copy = () => {
-    try {
-      navigator.clipboard.writeText(link).then(
-        () => setState('copied'),
-        () => setState('manual'),
-      );
-    } catch {
-      setState('manual');
-    }
-  };
-  // No clipboard access: show the link so it can be copied by hand.
-  if (state === 'manual')
-    return (
-      <input
-        className="field"
-        dir="ltr"
-        readOnly
-        value={link}
-        autoFocus
-        onFocus={(e) => e.target.select()}
-      />
-    );
-  return (
-    <button type="button" className="btn" onClick={copy}>
-      {t(state === 'copied' ? 'copied' : 'copyLink')}
-    </button>
-  );
-}
+import { ShareLink } from './ShareLink.jsx';
 
 function Member({ member, room, online }) {
   const t = useT();
@@ -83,7 +50,7 @@ export function RoomLobby({ online }) {
             {room.code}
           </span>
         </h2>
-        <CopyLink code={room.code} />
+        <ShareLink code={room.code} />
       </div>
 
       <ul className="slots">

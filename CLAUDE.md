@@ -147,10 +147,10 @@ public/                       copied as they are: favicon.svg, icons/, manifest.
 eslint.config.js, .prettierrc.json   lint rules and code layout, enforced in CI
 shared/config.js              constants, VERSION, palette, power-ups, SERVER_URL
 shared/protocol.js            the online wire format: server encodes, browser decodes
-shared/sim/                   pure simulation (no DOM, no timers): round, grid, bot, match
+shared/sim/                   pure simulation (no DOM, no timers): round, grid, bot, match, motion
 src/main.jsx, src/App.jsx     React entry and top component
 src/engine/                   no React: game.js (match state machine), renderer.js, input.js,
-                              audio.js, net.js, backButton.js
+                              audio.js, net.js, backButton.js, prediction.js, haptics.js
 src/state/, src/hooks/        saved settings + context; hooks that connect components to the engine
 src/i18n/strings.js           Hebrew and English strings
 src/components/               ui/ (shared controls), menu/, game/, SettingsDialog.jsx

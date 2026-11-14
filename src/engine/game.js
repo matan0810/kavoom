@@ -12,18 +12,25 @@ import { decodeSegment, decodeSnapshot } from '../../shared/protocol.js';
 import { Round } from '../../shared/sim/round.js';
 import { Match } from '../../shared/sim/match.js';
 import { Renderer } from './renderer.js';
+import { Predictor } from './prediction.js';
 
 const ONLINE_KEYS = [
   ['ArrowLeft', 'ArrowRight'],
   ['KeyA', 'KeyD'],
 ];
+const PING_EVERY_MS = 2000; // how often the round trip to the server is measured
 const MAX_PADS = 4; // pairs of touch buttons that fit on one screen
 const COUNTDOWN_SECONDS = 2.4; // "3, 2, 1" before a round
 const COUNT_STEP = 0.8; // seconds each countdown number stays up
 const ROUND_BREAK_SECONDS = 2.8; // pause between rounds
 
 export class Game {
-  constructor({ input, sfx, haptics = null }) {
+  // now: the clock, in ms. Tests pass their own.
+  constructor({ input, sfx, haptics = null, now = () => performance.now() }) {
+    this.now = now;
+    this.predictor = new Predictor(); // online: our own head, drawn ahead of the server
+    this.lastPing = -Infinity;
+    this.mySegmentAge = 0; // snapshots since the server last drew trail for us
     this.input = input;
     this.sfx = sfx;
     this.haptics = haptics;
@@ -227,6 +234,8 @@ export class Game {
     this.mode = 'online';
     this.myIndex = m.order.indexOf(you);
     this.lastDir = 0;
+    this.predictor.reset();
+    this.mySegmentAge = 0;
     this.hud = {
       names: m.names,
       colors: m.colors.map((c) => PALETTE[c].hex),
@@ -257,6 +266,14 @@ export class Game {
     view.items = snap.items;
     view.wrap = snap.wrap;
     this.hud.live = snap.points;
+
+    const me = snap.players[this.myIndex];
+    if (me) {
+      const serverMs = snap.step * DT * 1000;
+      this.predictor.addServerState(me, me.fx, snap.wrap, !snap.countingDown, this.now(), serverMs);
+      const drewMe = snap.segments.some(([player]) => player.id === this.myIndex);
+      this.mySegmentAge = drewMe ? 0 : this.mySegmentAge + 1;
+    }
 
     for (const seg of snap.segments) draw.segment(...seg);
     let died = false;
@@ -306,7 +323,31 @@ export class Game {
       input.touchDir();
     if (dir === this.lastDir) return;
     this.lastDir = dir;
+    this.predictor.addInput(dir, this.now());
     this.send({ t: 'input', d: dir });
+  }
+
+  // The round trip to the server is measured with a ping every couple of seconds.
+  sendPing() {
+    const now = this.now();
+    if (!this.send || now - this.lastPing < PING_EVERY_MS) return;
+    this.lastPing = now;
+    this.send({ t: 'ping', c: now });
+  }
+
+  onlinePong(m) {
+    this.predictor.addRttSample(this.now() - m.c);
+  }
+
+  // Our own head drawn where it will be once our input reaches the server, or
+  // null to draw it where the server last saw it. See prediction.js.
+  predictedHead() {
+    const me = this.view && this.view.players[this.myIndex];
+    if (this.mode !== 'online' || this.state !== 'playing' || !me || !me.alive) return null;
+    const guess = this.predictor.predict(this.now());
+    if (!guess) return null;
+    // No trail lately means a gap or the ghost effect: then the way there stays empty too.
+    return { ...guess, id: this.myIndex, r: me.r, trail: this.mySegmentAge <= 1 };
   }
 
   // ---------- Shared ----------
@@ -354,12 +395,15 @@ export class Game {
   // Called once per animation frame while the game screen is showing.
   frame(dt) {
     if (this.state === 'idle') return;
-    if (this.mode === 'online') this.sendInput();
-    else if (!this.paused) this.stepLocal(dt);
+    if (this.mode === 'online') {
+      this.sendInput();
+      this.sendPing();
+    } else if (!this.paused) this.stepLocal(dt);
     this.renderer.draw(this.view, {
       dt: this.paused ? 0 : dt,
       intro: this.state === 'countdown',
       names: this.hud.names,
+      predicted: this.predictedHead(),
     });
   }
 }

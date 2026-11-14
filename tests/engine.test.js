@@ -174,6 +174,7 @@ const snap = (extra = {}) => ({
   g: [],
   e: [],
   pts: [0, 0],
+  n: 0,
   ...extra,
 });
 
@@ -204,10 +205,14 @@ test("an online round finds this device's player and follows the server's snapsh
   game.frame(0.016);
   input.dir = 0;
   game.frame(0.016);
-  assert.deepEqual(sent, [
-    { t: 'input', d: -1 },
-    { t: 'input', d: 0 },
-  ]);
+  assert.deepEqual(
+    sent.filter((m) => m.t === 'input'),
+    [
+      { t: 'input', d: -1 },
+      { t: 'input', d: 0 },
+    ],
+  );
+  assert.equal(sent.filter((m) => m.t === 'ping').length, 1, 'one ping to measure the round trip');
 });
 
 test('an online knockout strikes the player out of the scoreboard', () => {
@@ -296,4 +301,34 @@ test('a finished match is reported once, with whether this device won', () => {
   const none = new Game({ input: makeInput(), sfx: quiet });
   none.startLocal(setup(bots(2)));
   assert.equal(none.myPlayer(), -1);
+});
+
+test('online, our own head is drawn ahead of the server once the round trip is known', () => {
+  let clock = 1000;
+  const sent = [];
+  const game = new Game({ input: makeInput(), sfx: quiet, now: () => clock });
+  game.send = (m) => sent.push(m);
+  game.onlineRound(roundMsg(), 7); // we are player 0
+  game.onlineSnapshot(snap());
+  game.frame(0.016);
+  assert.equal(game.predictedHead(), null, 'no measurement yet: drawn where the server says');
+
+  const ping = sent.find((m) => m.t === 'ping');
+  clock += 80;
+  game.onlinePong({ t: 'pong', c: ping.c });
+  clock += 500;
+  game.onlineSnapshot(snap({ n: 70, g: [[0, 99, 100, 100, 100, 3]] })); // 70 steps = 583 ms later
+  const head = game.predictedHead();
+  assert.ok(head.x > 100 + 5 && head.x < 100 + 20, 'about a round trip ahead along its heading');
+  assert.equal(head.id, 0);
+  assert.equal(head.trail, true);
+
+  // In a gap (no trail from the server for a while) the stretch to the head stays empty.
+  game.onlineSnapshot(snap({ n: 70 }));
+  game.onlineSnapshot(snap({ n: 70 }));
+  assert.equal(game.predictedHead().trail, false);
+
+  // Knocked out, or only watching: nothing to predict.
+  game.onlineSnapshot(snap({ p: [player(100, 100, 0), player(300, 200)] }));
+  assert.equal(game.predictedHead(), null);
 });

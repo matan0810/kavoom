@@ -17,6 +17,7 @@
 //                                          ['k', player, x, y, index in POWERUPS]  pickup
 //                                          ['c']  all trails cleared
 //     pts  points earned so far this round, per player
+//     n    simulation steps so far this round: the server's clock (120 steps a second)
 
 import { FX_KEYS, POWERUPS } from './config.js';
 
@@ -63,6 +64,7 @@ export function encodeSnapshot(round, { countingDown, countdown, segments, event
     g: segments,
     e: events,
     pts: round.points,
+    n: round.stepN,
   };
 }
 
@@ -95,5 +97,6 @@ export function decodeSnapshot(m) {
     segments: m.g.map(decodeSegment),
     events: m.e.map(decodeEvent),
     points: m.pts,
+    step: m.n,
   };
 }

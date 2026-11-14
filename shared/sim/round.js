@@ -14,6 +14,7 @@ import {
   BOT_LEVELS,
 } from '../config.js';
 import { Grid } from './grid.js';
+import { speedAndTurn } from './motion.js';
 import { botDecide } from './bot.js';
 
 const ARC_HALF = (75 * Math.PI) / 180;
@@ -98,9 +99,9 @@ export class Round {
 
   updateStats(p) {
     const f = p.fx;
-    const sm = (f.fast > 0 ? FX_MULT.fast : 1) * (f.slow > 0 ? FX_MULT.slow : 1);
-    p.speed = BASE.speed * sm;
-    p.turn = BASE.turn * Math.sqrt(sm);
+    const { speed, turn } = speedAndTurn(f);
+    p.speed = speed;
+    p.turn = turn;
     p.r = BASE.radius * (f.thin > 0 ? FX_MULT.thin : 1) * (f.thick > 0 ? FX_MULT.thick : 1);
   }
 

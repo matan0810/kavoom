@@ -86,6 +86,9 @@ export function useOnlineRoom(identity) {
         case 's':
           game.onlineSnapshot(m);
           break;
+        case 'pong':
+          game.onlinePong(m);
+          break;
         case 'roundEnd':
           game.onlineRoundEnd(m);
           break;

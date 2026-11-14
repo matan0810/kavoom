@@ -248,3 +248,12 @@ test('a public room cannot be locked, and a private one never starts by itself',
   run(room, 30);
   assert.equal(room.state, 'lobby');
 });
+
+test('a ping is echoed to the one who sent it, with a safe number', () => {
+  const { room, a, b, ma } = setup();
+  room.handle(ma.id, { t: 'ping', c: 123.5 });
+  assert.deepEqual(a.last('pong'), { t: 'pong', c: 123.5 });
+  assert.equal(b.last('pong'), undefined);
+  room.handle(ma.id, { t: 'ping', c: 'x'.repeat(500) });
+  assert.deepEqual(a.last('pong'), { t: 'pong', c: 0 });
+});

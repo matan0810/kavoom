@@ -25,6 +25,7 @@ breaking changes are major.
 
 ### Changed
 - Create room is now called Room for friends, next to the new Quick game button.
+- Online steering responds at once. Your own line is now drawn where it will be when your key press reaches the server, instead of one round trip late. The server still decides every knockout.
 
 ### Fixed
 - Sound on iPhones: audio is now switched on from the first touch, as Safari requires.

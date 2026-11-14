@@ -192,6 +192,10 @@ export class Room {
       case 'input':
         m.input = msg.d === 1 ? 1 : msg.d === -1 ? -1 : 0;
         return;
+      case 'ping':
+        // Echoed straight back: the browser measures the round trip with it.
+        if (m.send) m.send(JSON.stringify({ t: 'pong', c: Number.isFinite(msg.c) ? msg.c : 0 }));
+        return;
       case 'name':
         m.name = cleanName(msg.name);
         break;

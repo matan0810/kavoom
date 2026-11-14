@@ -185,7 +185,9 @@ export class Renderer {
     }
   }
 
-  draw(round, { dt = 0, intro = false, names = [] } = {}) {
+  // predicted: this device's own head drawn ahead of the server (see prediction.js),
+  // as { id, x, y, angle, r, path, trail }, or null.
+  draw(round, { dt = 0, intro = false, names = [], predicted = null } = {}) {
     if (!this.canvas) return;
     this.fit();
     const { ctx, w, h } = this;
@@ -218,7 +220,13 @@ export class Renderer {
 
     if (round) {
       for (const it of round.items) this.drawItem(it);
-      for (const p of round.players) if (p.alive) this.drawHead(p, intro, names[p.id]);
+      if (predicted && predicted.trail) this.drawPredictedTrail(predicted);
+      for (const p of round.players) {
+        if (!p.alive) continue;
+        const mine = predicted && predicted.id === p.id;
+        const head = mine ? { ...p, x: predicted.x, y: predicted.y, angle: predicted.angle } : p;
+        this.drawHead(head, intro, names[p.id]);
+      }
     }
     this.drawParticles(dt);
     ctx.restore();
@@ -262,6 +270,25 @@ export class Renderer {
     ctx.fillStyle = ctx.strokeStyle = '#f4f5ff';
     glyph(ctx, it.def.id);
     ctx.restore();
+  }
+
+  // The stretch between the server's last position and the predicted head. It is
+  // redrawn every frame and never kept: the real trail arrives from the server.
+  drawPredictedTrail({ id, r, path }) {
+    const { ctx } = this;
+    ctx.strokeStyle = this.colors[id];
+    ctx.lineWidth = r * 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    path.forEach(([x, y], i) => {
+      const [px, py] = path[i - 1] || [x, y];
+      // A long jump is the head leaving one side and coming back on the other.
+      const jumped = Math.abs(x - px) > 50 || Math.abs(y - py) > 50;
+      if (i === 0 || jumped) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
   }
 
   drawHead(p, intro, name) {

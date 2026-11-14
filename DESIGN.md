@@ -10,7 +10,7 @@ alive takes the round.
 | --- | --- |
 | 2 to 6 players on one device | Accounts and shared high scores |
 | Online rooms, each player on their own device | Map editor |
-| Bots at three levels | Client-side prediction for online play |
+| Bots at three levels | Predicting other players' lines online |
 | Power-ups, with an off switch | |
 | Touch controls for phones | |
 | Hebrew (RTL) and English | |
@@ -31,10 +31,13 @@ shared/sim/grid.js       occupancy grid for collisions
 shared/sim/round.js      one round: movement, collisions, gaps, power-ups, round points
 shared/sim/bot.js        computer player decisions
 shared/sim/match.js      cumulative score, target and win condition
+shared/sim/motion.js     how a head moves; shared by the round and the prediction
 src/main.jsx             mounts the app
 src/App.jsx              picks the screen (menu or game), owns the online room
 src/engine/              plain JavaScript, no React:
   game.js                  match state machine for local and online play
+  prediction.js            online: our own head drawn ahead of the server
+  haptics.js               vibration on knockout
   renderer.js              canvas drawing, particles and effects
   input.js, audio.js       keyboard and touch state, WebAudio sound effects
   net.js                   WebSocket client with automatic rejoin
@@ -267,8 +270,17 @@ Nobody can cheat from the browser, and everyone sees the same game.
   match ends and plays in the next one.
 - A dropped player keeps their seat during a match while a medium bot steers; the client
   retries six times with a token. In the lobby a drop frees the seat.
-- No client-side prediction: input lag equals the round trip to the server, so the
-  server should be close to the players (Render, Frankfurt).
+- Prediction of your own head: a key press takes one round trip to come back from the
+  server, so the server's position for your line is always old. The browser measures the
+  round trip with a ping every two seconds, takes the newest server position, and replays
+  your own recent input on top of it for one round trip (at most 250 ms), using the same
+  movement code as the simulation (`shared/sim/motion.js`). Your head and the short stretch
+  behind it are drawn there; the stretch is redrawn every frame and replaced by the real
+  trail as it arrives. Snapshots carry the server's step count, so the timing follows the
+  server's clock and not the uneven arrival of messages. Other players, trails, power-ups
+  and knockouts are drawn exactly as the server sends them. You can therefore see your head
+  pass a spot the server then rules a crash, by up to the round trip; the server should
+  still be close to the players (Render, Frankfurt).
 
 ## 11. Tests
 
@@ -285,6 +297,8 @@ Nobody can cheat from the browser, and everyone sees the same game.
   knockout and match-end messages.
 - Back button (`tests/backbutton.test.js`): against a fake browser history: one entry per
   layer, Back closes the top layer, no double Back, sticky game layer, Forward undone.
+- Prediction (`tests/prediction.test.js`): the head moves exactly as in the round, and with
+  a simulated 120 ms connection the predicted head stays within a line's width of the truth.
 - Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode.
 - Layout and renderer: when the arena turns upright, and that the turn is a pure rotation.
 - Settings: bad saved values are replaced or clamped, language detection.

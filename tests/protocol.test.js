@@ -50,6 +50,7 @@ test('a snapshot survives the trip through JSON', () => {
   snap.items.forEach((it, i) => assert.equal(it.def, round.items[i].def));
   assert.deepEqual(snap.segments, [[{ id: 1 }, 10, 20, 30.5, 40, 3]]);
   assert.deepEqual(snap.points, round.points);
+  assert.equal(snap.step, 900, 'the server clock: steps simulated so far');
 });
 
 test('the countdown flag and time are carried', () => {

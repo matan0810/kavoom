@@ -1,30 +1,36 @@
-# אבטחה
+# Security
 
-## מה השרת שומר
+## What the server stores
 
-כלום. אין חשבונות, אין מסד נתונים ואין קבצי לוג עם מידע על שחקנים. השם והצבע של כל
-שחקן אונליין נמצאים בזיכרון של השרת רק כל עוד החדר פתוח. השרת לא רושם כתובות IP.
-ההגדרות של כל שחקן (שפה, מקשים, צבעים) נשמרות רק בדפדפן שלו.
+Nothing. There are no accounts, no database and no logs with player data. An online
+player's name and colour live in server memory only while the room is open. The server
+does not record IP addresses. Each player's settings (language, keys, colours) are kept
+only in their own browser.
 
-## מה מוגן
+## What is protected
 
-- **קבצים:** השרת מגיש רק את `index.html`, `favicon.svg`, `manifest.webmanifest`
-  ואת התיקיות `js/`, `css/`, `icons/`. קוד השרת, הבדיקות והגדרות הפרויקט לא נגישים.
-- **כותרות:** Content-Security-Policy שמתירה סקריפטים רק מהאתר עצמו, איסור הטמעה
-  במסגרת, nosniff ו-HSTS מאחורי HTTPS.
-- **אונליין:** חיבור מתקבל רק מהאתר של המשחק (בדיקת Origin). הודעה עד 2KB, עד 200
-  הודעות בשנייה, כל ערך שמגיע מהשחקן נבדק מול רשימה סגורה, ושמות מנוקים מתווים מיוחדים.
-  השרת הוא שמריץ את המשחק, כך ששחקן לא יכול לרמות דרך הדפדפן.
-- **עומס:** עד 200 חדרים, 1000 חיבורים, 20 חיבורים מכתובת אחת. חיבור שלא עונה נסגר.
-- **יציבות:** שגיאה בטיפול בהודעה או בחדר לא מפילה את השרת.
+- **Files:** the server serves only `index.html`, `favicon.svg`, `manifest.webmanifest`
+  and the `js/`, `css/` and `icons/` folders, checked after the path is resolved. Server
+  code, tests and project files are never served.
+- **Headers:** a Content-Security-Policy that allows scripts only from the site itself,
+  no framing, `nosniff`, and HSTS behind HTTPS.
+- **Online:** connections are accepted only from the game's own site (Origin check).
+  Messages are capped at 2 KB and 200 per second, every value from a client is checked
+  against a closed list, and names are stripped of special characters. The server runs
+  the game, so a player cannot cheat from the browser.
+- **Load:** at most 200 rooms, 1000 connections and 20 connections from one address.
+  Connections that stop answering are closed, and lobby members idle for 30 minutes are
+  disconnected.
+- **Stability:** an error while handling a message or running a room does not take the
+  server down.
 
-## מגבלות ידועות
+## Known limits
 
-- ההגבלה לכתובת אחת מבוססת על הכותרת `X-Forwarded-For`, שאפשר לזייף. ההגבלות הכלליות
-  עדיין חלות.
-- אין סיסמה לחדרים. מי שיש לו את הקוד יכול להיכנס.
-- הגנה מהתקפת מניעת שירות רחבה תלויה בתשתית של Render.
+- The per-address cap relies on the `X-Forwarded-For` header, which can be forged. The
+  server-wide caps still apply.
+- Rooms have no password. Anyone with the code can join.
+- Protection against large denial-of-service attacks depends on Render's infrastructure.
 
-## דיווח על בעיה
+## Reporting a problem
 
-דרך לשונית Security ברפו (Report a vulnerability), ולא ב-Issue ציבורי.
+Use the repository's Security tab (Report a vulnerability), not a public issue.

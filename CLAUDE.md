@@ -4,7 +4,8 @@ KAVOOM is an original browser line game (each player leaves a trail; touching a 
 or a wall knocks you out). Local play for 2 to 6 on one device, online rooms through a
 small Node server, bots, power-ups, Hebrew and English. Live at https://kavoom.onrender.com.
 
-The owner talks to you in Hebrew; answer in Hebrew. Keep the UI minimal.
+The owner talks to you in Hebrew; answer in Hebrew. All repository docs (README, CHANGELOG,
+SECURITY, DESIGN, code comments) are in English only. Keep the UI minimal.
 
 ## Branches and releases (strict)
 
@@ -12,7 +13,7 @@ The owner talks to you in Hebrew; answer in Hebrew. Keep the UI minimal.
 - `main` is production. Render deploys every push to `main`, and a GitHub Action tags it
   and publishes a release. **Never push or merge to `main` unless the owner explicitly
   says to release** ("תעלה גרסה", "release", and similar).
-- Every user-facing change gets a line under `## [Unreleased]` in `CHANGELOG.md` (Hebrew).
+- Every user-facing change gets a line under `## [Unreleased]` in `CHANGELOG.md`.
 - To release, on `dev`:
   1. `npm run bump -- patch|minor|major` (patch = fixes, minor = features).
      It updates package.json, package-lock.json, `VERSION` in js/config.js and CHANGELOG.md.
@@ -33,7 +34,7 @@ js/render.js, input.js, audio.js, net.js, i18n.js, main.js   browser side
 server/server.js              static files + WebSocket rooms, security limits
 server/room.js                one room: lobby, match, broadcast (no sockets, unit tested)
 tests/                        node --test: sim, room, server
-DESIGN.md                     full design spec (Hebrew)
+DESIGN.md                     full design spec
 ```
 
 `js/sim/` must stay free of DOM and timers: the same code runs the local game, the menu

@@ -1,139 +1,149 @@
-# KAVOOM: מסמך תכנון
+# KAVOOM: design
 
-משחק דפדפן מקורי בז'אנר "קווים": כל שחקן הוא קו שנע קדימה בלי הפסקה ומשאיר שובל.
-מי שנוגע בקיר או בשובל נפסל. האחרון שנשאר זוכה בסיבוב.
+An original browser game in the "lines" genre. Every player is a line that keeps moving
+forward and leaves a trail. Touching a wall or any trail knocks you out. The last one
+alive takes the round.
 
-## 1. מטרות והיקף
+## 1. Scope
 
-| בפנים | בחוץ |
+| In | Out |
 | --- | --- |
-| 2 עד 6 משתתפים על מקלדת אחת | משחק אונליין ושרת |
-| שחקני מחשב (בוטים) בשלוש רמות | טבלאות שיאים משותפות |
-| בונוסים על המגרש, עם מתג כיבוי | עורך מפות |
-| אתר סטטי בלי שלב build ובלי תלויות | פריימוורק או bundler |
-| ממשק בעברית (RTL), מקשים לפי `event.code` כך שפריסת המקלדת לא משנה | תרגומים |
-| שליטת מגע בסיסית לשחקן האנושי הראשון | ריבוי שחקנים במגע |
+| 2 to 6 players on one device | Accounts and shared high scores |
+| Online rooms, each player on their own device | Map editor |
+| Bots at three levels | Client-side prediction for online play |
+| Power-ups, with an off switch | |
+| Touch controls for phones | |
+| Hebrew (RTL) and English | |
+| Keys bound by `event.code`, so the keyboard layout does not matter | |
 
-## 2. מבנה הקוד
+## 2. Code layout
 
 ```
-shoval/
-  index.html          מבנה המסכים
-  css/style.css       עיצוב (טוקנים ב-:root)
-  js/config.js        קבועים: מגרש, פיזיקה, צבעים, מקשים, בונוסים
-  js/sim/grid.js      רשת תפוסה לזיהוי התנגשויות
-  js/sim/round.js     סיבוב אחד: תנועה, התנגשויות, חורים, בונוסים, ניקוד סיבוב
-  js/sim/bot.js       קבלת החלטות של שחקן מחשב
-  js/sim/match.js     ניקוד מצטבר, יעד ותנאי ניצחון
-  js/render.js        ציור על canvas, חלקיקים ואפקטים
-  js/input.js         מקלדת ומגע
-  js/audio.js         צלילים ב-WebAudio
-  js/main.js          תפריט, לולאת המשחק ומכונת המצבים
-  tests/sim.test.js   בדיקות לסימולציה (node --test)
+index.html               the screens
+css/style.css            styles (tokens on :root, logical properties for RTL and LTR)
+favicon.svg, icons/, manifest.webmanifest
+js/config.js             constants: version, arena, physics, palette, keys, power-ups
+js/sim/grid.js           occupancy grid for collisions
+js/sim/round.js          one round: movement, collisions, gaps, power-ups, round points
+js/sim/bot.js            computer player decisions
+js/sim/match.js          cumulative score, target and win condition
+js/render.js             canvas drawing, particles and effects
+js/input.js              keyboard and touch
+js/audio.js              WebAudio sound effects
+js/net.js                WebSocket client with automatic rejoin
+js/i18n.js               Hebrew and English strings
+js/main.js               menu, game loop, state machine, local and online modes
+server/server.js         static files + WebSocket rooms + security limits
+server/room.js           one online room (no sockets, unit tested)
+scripts/                 release helpers
+tests/                   node --test: simulation, rooms, server
 ```
 
-העיקרון המרכזי: תיקיית `sim/` טהורה. אין בה DOM, canvas או שעון. היא מקבלת מחולל
-אקראיות עם seed ומדווחת החוצה דרך hooks (`segment`, `death`, `pickup`, `clear`).
-כך אפשר לבדוק אותה ב-Node, ואותה סימולציה מריצה גם את הדמו שברקע התפריט.
+The key rule: `js/sim/` is pure. No DOM, canvas or clock. It takes a seeded random
+generator and reports outward through hooks (`segment`, `death`, `pickup`, `clear`).
+The same code runs the local game, the menu demo and the online server, and it is
+tested in Node.
 
-## 3. סימולציה
+## 3. Simulation
 
-### 3.1 זמן ומרחב
-- מגרש לוגי קבוע: 1120×720 יחידות. ה-canvas מתכווץ ומתרחב לפי החלון, הלוגיקה לא.
-- צעד קבוע של 1/120 שנייה עם accumulator. התוצאה לא תלויה בקצב הפריימים.
-- פריים ארוך מ-100ms (לשונית ברקע) נחתך, כדי שלא יהיה "קפיצה" של עשרות צעדים.
+### 3.1 Time and space
+- Fixed logical arena of 1120×720 units. The canvas scales to the window; the logic does not.
+- Fixed step of 1/120 s with an accumulator, so results do not depend on frame rate.
+- A frame longer than 100 ms (background tab) is clamped, so there is no jump of dozens of steps.
 
-### 3.2 תנועה
-| פרמטר | ערך בסיס |
+### 3.2 Movement
+| Parameter | Base value |
 | --- | --- |
-| מהירות | 105 יחידות לשנייה |
-| קצב סיבוב | 2.85 רדיאן לשנייה (רדיוס סיבוב כ-37) |
-| רדיוס הקו | 3 (עובי 6) |
+| Speed | 105 units/s |
+| Turn rate | 2.85 rad/s (turn radius about 37) |
+| Line radius | 3 (width 6) |
 
-קלט כל שחקן הוא ‎-1, 0 או 1. הזווית מתעדכנת ואז המיקום. כשהמהירות משתנה מבונוס,
-קצב הסיבוב מוכפל בשורש מכפיל המהירות, כדי שהשליטה תישאר סבירה.
+Each player's input is -1, 0 or 1. The angle is updated, then the position. When a
+power-up changes speed, the turn rate is multiplied by the square root of the speed
+factor so steering stays manageable.
 
-### 3.3 זיהוי התנגשויות
-- רשת בגודל המגרש, תא לכל יחידה: `owner` (מי צייר) ו-`stamp` (באיזה צעד).
-- בכל צעד מוטבעת דיסקה ברדיוס הקו במיקום החדש. תא שכבר תפוס לא נדרס.
-- הבדיקה נעשית בנקודות על קשת של 150 מעלות בחזית הראש, במרחק רדיוס+0.8.
-  מספר הנקודות גדל עם הרדיוס (נקודה כל 1.2 יחידות בערך), כך שקו דק לא יחמוק
-  בין שתי נקודות של ראש עבה.
-- תאים של השחקן עצמו שצוירו לפני פחות מ-K צעדים לא נחשבים, כאשר K מחושב מהמהירות
-  ומהרדיוס הנוכחיים (מרחק של שני רדיוסים ועוד 4).
-- סדר הצעד: קודם כולם זזים ונבדקים מול הרשת של הצעד הקודם, ורק אחר כך כולם מטביעים.
-  כך התנגשות ראש בראש פוסלת את שניהם ולא את מי שבמקרה ראשון ברשימה.
-- קיר: מרכז הראש במרחק קטן מהרדיוס מהקצה.
+### 3.3 Collisions
+- A grid with one cell per arena unit: `owner` (who painted it) and `stamp` (which step).
+- Every step stamps a disc of the line radius at the new position. Taken cells are not overwritten.
+- The check samples points on a 150° arc in front of the head, at radius + 0.8. The
+  number of points grows with the radius (about one every 1.2 units), so a thin line
+  cannot slip between the samples of a thick head.
+- A player's own cells painted fewer than K steps ago are ignored, where K comes from
+  the current speed and radius (a distance of two radii plus 4).
+- Step order: everyone moves and is checked against last step's grid, and only then
+  everyone stamps. A head-on collision knocks out both players, not whoever happens to
+  be first in the list.
+- Wall: the head centre gets closer to an edge than its radius.
 
-### 3.4 חורים בשובל
-נמדדים במרחק ולא בזמן, כך שהאצה לא משנה את גודלם: אחרי 170 עד 520 יחידות של ציור
-בא חור באורך 24 יחידות. בזמן חור לא מציירים ולא מטביעים, אבל הראש עדיין נפסל אם
-הוא נוגע בשובל.
+### 3.4 Trail gaps
+Measured in distance, not time, so speed does not change their size: after 170 to 520
+units of drawing comes a gap of 24 units. During a gap nothing is drawn or stamped,
+but the head still dies if it touches a trail.
 
-### 3.5 הצבה בתחילת סיבוב
-מיקום אקראי במרחק 110 לפחות מהקירות ו-150 לפחות משחקן אחר. הכיוון אקראי, בתנאי
-שיש לפחות 260 יחידות פנויות עד הקיר בכיוון הזה.
+### 3.5 Round start
+Random positions at least 110 from the walls and 150 from other players. Random heading,
+as long as there are at least 260 free units to the wall in that direction.
 
-## 4. בונוסים
+## 4. Power-ups
 
-עיגול ברדיוס 15 על המגרש. צבע הטבעת מסמן על מי הבונוס משפיע.
+A circle of radius 15 on the arena. Its ring colour shows who it affects.
 
-| בונוס | על מי | השפעה | משך |
+| Power-up | Affects | Effect | Duration |
 | --- | --- | --- | --- |
-| טורבו | עצמי (ירוק) | מהירות ×1.6 | 5 ש' |
-| האטה | עצמי | מהירות ×0.6 | 6 ש' |
-| קו דק | עצמי | עובי ×0.5 | 8 ש' |
-| רוח רפאים | עצמי | בלי שובל ובלי התנגשות בשובלים, קירות עדיין פוסלים | 3.5 ש' |
-| טורבו ליריבים | יריבים (אדום) | מהירות ×1.6 | 4 ש' |
-| קו עבה ליריבים | יריבים | עובי ×2 | 7 ש' |
-| היפוך מקשים | יריבים | ימין ושמאל מתחלפים | 5 ש' |
-| ניקוי | כולם (כחול) | מוחק את כל השובלים | מיידי |
-| קירות פתוחים | כולם | יציאה מקיר מחזירה מהצד השני | 8 ש' |
+| Turbo | self (green) | speed ×1.6 | 5 s |
+| Slow | self | speed ×0.6 | 6 s |
+| Thin line | self | width ×0.5 | 8 s |
+| Ghost | self | no trail and no trail collisions; walls still kill | 3.5 s |
+| Turbo for rivals | rivals (red) | speed ×1.6 | 4 s |
+| Thick line for rivals | rivals | width ×2 | 7 s |
+| Reversed keys | rivals | left and right swap | 5 s |
+| Clear | everyone (blue) | erases all trails | instant |
+| Open walls | everyone | leaving one edge brings you back on the opposite one | 8 s |
 
-- הופעה: הראשון אחרי 3 עד 5 שניות, ואז כל 4 עד 8 שניות. עד 4 על המגרש בו זמנית.
-- בונוס נעלם אחרי 14 שניות ומהבהב בשתיים האחרונות.
-- לא מופיע קרוב מ-45 לקיר או מ-70 לראש של שחקן.
-- איסוף חוזר של אותו אפקט מחדש את הטיימר ולא מצטבר. טורבו והאטה יחד מתקזזים.
-- סביב הראש מצוירת טבעת לכל אפקט פעיל, שמתקצרת עם הזמן שנותר.
+- First spawn after 3 to 5 s, then every 4 to 8 s. At most 4 on the arena.
+- A power-up disappears after 14 s and blinks for its last 2.
+- Never spawns closer than 45 to a wall or 70 to a head.
+- Picking up an active effect again resets its timer; effects do not stack. Turbo and slow cancel out.
+- Each active effect draws a ring around the head that shrinks as time runs out.
 
-## 5. ניקוד ומהלך משחק
+## 5. Scoring and match flow
 
-- בכל פסילה, כל מי שעדיין חי מקבל נקודה. מנצח הסיבוב מקבל N-1.
-- אם האחרונים נפסלים באותו צעד, אף אחד לא מקבל את הנקודה האחרונה והסיבוב הוא תיקו.
-- יעד: 5, 10 או 15 נקודות כפול (N-1), לפי אורך המשחק שנבחר.
-- המשחק נגמר כשמישהו הגיע ליעד ומוביל ב-2 נקודות לפחות. אחרת ממשיכים.
-
-מכונת המצבים:
+- On every knockout, everyone still alive gets a point. The round winner ends with N-1.
+- If the last players die in the same step, nobody gets the final point and the round is a draw.
+- Target: 5, 10 or 15 points times (N-1), by match length.
+- The match ends when someone reaches the target with a lead of at least 2. Otherwise play continues.
 
 ```
-תפריט → ספירה לאחור (3,2,1) → משחק → סוף סיבוב → ספירה לאחור ...
-                                              └→ סוף משחק → משחק חוזר / תפריט
+menu → countdown (3, 2, 1) → playing → round end → countdown ...
+                                                └→ match end → rematch / menu
 ```
 
-- בספירה לאחור רואים את נקודות הפתיחה, חץ כיוון ושם מעל כל שחקן.
-- רווח: השהיה בזמן משחק, דילוג בסוף סיבוב. Esc: השהיה. מעבר ללשונית אחרת משהה לבד.
+- During the countdown each player sees their start point, a direction arrow and their name.
+- Space pauses a local game and skips the round-end pause. Esc pauses. Switching tabs pauses.
+- Leaving a match always asks first, and the game is frozen while it asks.
 
-## 6. בוטים
+## 6. Bots
 
-בכל החלטה הבוט בודק תשעה מסלולים: שלוש פעולות (שמאלה, ישר, ימינה) לקטע ראשון
-של 45 יחידות, ואחרי כל אחת שלוש פעולות להמשך. לכל מסלול נמדד המרחק החופשי עד
-מכשול (שובל או קיר, עם מרווח ביטחון לצדדים). ציון פעולה הוא המסלול הטוב ביותר
-שמתחיל בה. בשוויון הבוט מעדיף להמשיך במה שעשה, ואז ישר.
+On each decision a bot tests nine paths: three moves (left, straight, right) for a first
+leg of 45 units, then three moves for the rest. Each path is scored by its free run to
+an obstacle (trail or wall, with a side safety margin). A move scores 0.7 of its best
+follow-up plus 0.3 of the average, so bots prefer moves that keep several ways out. On
+a tie a bot keeps its current move, then goes straight.
 
-| רמה | טווח ראייה | החלטה כל | תוספות |
+| Level | Look-ahead | Decides every | Extras |
 | --- | --- | --- | --- |
-| קל | 70 | 14 צעדים | טועה מדי פעם, לא רודף בונוסים |
-| בינוני | 120 | 8 צעדים | פונה לבונוסים כשהדרך פנויה |
-| קשה | 190 | 4 צעדים | גם נמנע מהאזור שמול ראשים של יריבים |
+| Easy | 70 | 14 steps | occasional mistakes, ignores power-ups |
+| Medium | 120 | 8 steps | heads for power-ups when the way is clear |
+| Hard | 190 | 4 steps | also avoids the space in front of rival heads |
 
-כשהדרך פנויה לגמרי הבוט "משוטט": בוחר מדי פעם פנייה קלה, כדי שלא ינוע בקווים ישרים
-בלבד. היפוך מקשים משפיע גם על בוטים: הם מתבלבלים לזמן שתלוי ברמה ואז מסתגלים.
+When the way is clear a bot wanders with an occasional gentle turn. Reversed keys
+confuse bots for a time that depends on their level.
 
-## 7. קלט
+## 7. Input
 
-מקשי ברירת מחדל (שמאלה / ימינה), לפי מיקום פיזי במקלדת:
+Default keys (left / right), by physical key position:
 
-| שחקן | מקשים |
+| Player | Keys |
 | --- | --- |
 | 1 | ← → |
 | 2 | A D |
@@ -142,77 +152,67 @@ shoval/
 | 5 | 1 Q |
 | 6 | 9 0 |
 
-כל מקש ניתן להחלפה בתפריט: לוחצים על המקש ואז על המקש החדש. אם המקש תפוס, השניים
-מתחלפים. במסך מגע, חצי המסך השמאלי והימני שולטים בשחקן האנושי הראשון.
+Any key can be rebound in the menu: click the key, then press the new one. A key that is
+already taken swaps with its owner.
 
-## 8. ציור
+Touch:
+- One human on the device: two large thumb buttons, beside the arena in landscape and
+  below it in portrait.
+- Several humans on one touch screen: a pair of buttons in each player's colour, up to four.
+- Buttons appear automatically on touch devices and can be forced on or off in settings.
+- Full screen (with a landscape lock where the browser allows it) and a screen wake lock.
 
-- שכבת שובלים נפרדת (canvas מחוץ למסך ברזולוציה כפולה) שמצטברת, ומעליה בכל פריים
-  ראשים, בונוסים, חלקיקים וטבעות אפקט.
-- פסילה: פרץ חלקיקים בצבע השחקן, טבעת מתרחבת ורעידת מסך קצרה.
-- ניקוי: הבזק לבן קצר. קירות פתוחים: מסגרת מקווקוות.
-- `prefers-reduced-motion`: בלי רעידה ובלי דמו ברקע התפריט.
+## 8. Drawing
 
-## 9. ממשק ועיצוב
+- Trails accumulate on an offscreen canvas at double resolution; heads, power-ups,
+  particles and effect rings are drawn over it every frame.
+- Knockout: a particle burst in the player's colour, an expanding ring and a short screen shake.
+- Clear: a short white flash. Open walls: a moving dashed border.
+- `prefers-reduced-motion` or the screen shake setting: no shake, and no menu demo
+  animation with reduced motion.
 
-- מראה כהה יחיד בכוונה: רקע כחול-דיו, מגרש עם רשת נקודות עדינה, שישה צבעי שחקן
-  רוויים ומובחנים. גופן כותרת Secular One, גופן טקסט Heebo.
-- תפריט: דמו חי של בוטים בראש העמוד, שש שורות שחקן (כבוי / שחקן / בוט, שם, מקשים),
-  הגדרות (אורך, בונוסים, רמת בוטים, צליל) וכפתור התחלה.
-- משחק: לוח ניקוד בצד (מעל המגרש במסך צר) שמתעדכן בכל פסילה, והמגרש.
-- ההגדרות נשמרות ב-localStorage, עם try/catch, והמשחק עובד גם בלעדיו.
+## 9. Interface
 
-## 10. בדיקות
+- One dark look on purpose: ink-blue ground, an arena with a faint dot grid, and twelve
+  saturated, distinct player colours. Display face Secular One, body face Heebo.
+- Menu: a live bot demo on top, a bar with mode (one device / online), version, sound
+  and display settings, and language. Below it, players on one side and settings on the other.
+- Game: the scoreboard beside the arena (above it on narrow screens), updated on every knockout.
+- Colours: tapping the dot in a player's row opens the picker. On one device a taken
+  colour swaps with its owner; online it is blocked.
+- Language: Hebrew for browsers that prefer Hebrew or clocks set to Israel, English
+  otherwise. A choice made in the menu is remembered.
+- Settings are stored in `localStorage` inside try/catch, and the game works without it.
 
-`node --test` על הסימולציה:
-- פסילה בקיר, ומעבר דרך קיר כשקירות פתוחים.
-- פסילה בשובל של יריב, והתנגשות ראש בראש שפוסלת את שניהם.
-- שחקן שנוסע ישר או במעגל רחב לא נפסל מהשובל של עצמו, בכל שילוב של מהירות ועובי.
-- ניקוד סיבוב: כל פסילה מזכה את החיים, ותיקו לא מזכה.
-- תנאי ניצחון: יעד והפרש 2.
-- דטרמיניזם: אותו seed נותן אותה תוצאה.
-- בוטים: בוט קשה שורד לבד על המגרש הרבה יותר מקו שנוסע ישר.
+## 10. Online
 
-בנוסף בדיקת עשן בדפדפן (Playwright): טעינה בלי שגיאות, משחק בוטים מלא עד מסך הסיום.
+An authoritative server, the usual model for online games. Clients send only their
+input (left, straight, right); the server runs the simulation and broadcasts the state.
+Nobody can cheat from the browser, and everyone sees the same game.
 
-## 11. גרסה 2: אונליין, טלפון, צבעים, שפות
+- Rooms: a 4-letter code. The share link carries the code in the URL hash. Up to 6
+  players, bots included.
+- Host: the creator. Only the host changes settings, adds bots and starts. If the host
+  leaves, the role passes on.
+- Broadcast: 60 JSON snapshots a second with heads, power-ups, new trail segments
+  (consecutive pieces of one line merged), events (knockout, pickup, clear) and points.
+- Joining mid-round replays every trail segment so far. The newcomer watches until the
+  match ends and plays in the next one.
+- A dropped player keeps their seat during a match while a medium bot steers; the client
+  retries six times with a token. In the lobby a drop frees the seat.
+- No client-side prediction: input lag equals the round trip to the server, so the
+  server should be close to the players (Render, Frankfurt).
 
-### 11.1 אונליין
-המודל המקובל במשחקי רשת: **שרת סמכותי**. הלקוחות שולחים רק קלט (שמאלה, ישר, ימינה),
-השרת מריץ את הסימולציה ומשדר לכולם את מצב המשחק. כך אף לקוח לא יכול לרמות, וכולם
-רואים בדיוק אותו משחק. מאחר ש-`js/sim/` טהורה, השרת מריץ את אותו קוד בדיוק ב-Node.
+## 11. Tests
 
-```
-server/server.js   HTTP סטטי + WebSocket בנתיב /ws, לולאת 60 טיקים בשנייה
-server/room.js     חדר אחד: לובי, משחק, שידור. בלי sockets, ולכן נבדק ב-node --test
-js/net.js          חיבור מהדפדפן, כולל חיבור מחדש אוטומטי
-```
+`npm test` (node --test):
+- Simulation: walls, open walls, opponent trails, head-on collisions, no self-collision
+  at any speed and width, gaps, ghost, scoring, power-up targets, reversed keys, pickups,
+  match target and 2-point lead, determinism with a seed, bot survival.
+- Rooms: joining, colours, limits, host rights, input, a full match with bots, reconnects.
+- Server: security headers, malformed URLs, only public files served, path traversal,
+  WebSocket origin check, junk and oversized messages, per-address connection cap.
+- Version: `js/config.js` matches `package.json`.
 
-- **חדרים:** קוד בן 4 אותיות. הקישור לשיתוף נושא את הקוד ב-hash. עד 6 משתתפים, כולל בוטים.
-- **מארח:** היוצר. רק הוא משנה הגדרות, מוסיף בוטים ומתחיל. אם עזב, התפקיד עובר הלאה.
-- **שידור:** 60 תמונות מצב בשנייה ב-JSON. כל אחת כוללת מיקומי ראשים, בונוסים, קטעי שובל
-  חדשים (קטעים רצופים של אותו קו מאוחדים לקטע אחד), אירועים (פסילה, איסוף, ניקוי) וניקוד.
-- **מצטרף באמצע סיבוב** מקבל את כל קטעי השובל שנצברו ורואה מגרש מלא. הוא צופה עד סוף
-  המשחק ומצטרף לבא.
-- **ניתוק באמצע משחק:** המקום נשמר, בוט בינוני נוהג בקו, והלקוח מנסה להתחבר מחדש שש פעמים
-  עם token. בלובי ניתוק פשוט מפנה את המקום.
-- **הגנות:** הודעה עד 2KB, עד 200 הודעות בשנייה לחיבור, עד 200 חדרים, שמות מנוקים ומקוצרים,
-  כל ערך מהלקוח נבדק מול רשימה סגורה, ping כל 20 שניות לניתוק חיבורים מתים.
-- **מה אין:** חיזוי בצד הלקוח. השהיית הקלט שווה לזמן הלוך-חזור לשרת, ולכן כדאי לארח
-  את השרת קרוב לשחקנים.
-
-### 11.2 טלפון
-- **כל אחד בטלפון שלו:** זה מצב האונליין. שני כפתורי אגודל גדולים, משני צידי המגרש
-  כשהטלפון שוכב ומתחתיו כשהוא עומד.
-- **כמה שחקנים על מסך מגע אחד:** זוג כפתורים בצבע השחקן לכל אחד, עד ארבעה.
-- הכפתורים מופיעים אוטומטית במכשיר מגע, ואפשר לכפות או לכבות אותם בהגדרות.
-- כפתור מסך מלא (כולל נעילה לרוחב כשהדפדפן מרשה) ובקשת wake lock כדי שהמסך לא יכבה.
-
-### 11.3 שאר השינויים
-- **שם:** KAVOOM (קו + בום).
-- **יציאה ממשחק** שואלת תמיד קודם, והמשחק קופא בזמן השאלה. ברירת המחדל היא להמשיך לשחק.
-- **הגדרות קול ומסך** (צליל, עוצמה, רעידת מסך, כפתורי מגע, מסך מלא) נגישות מהתפריט
-  ומתוך המשחק. במשחק מקומי פתיחתן משהה.
-- **צבעים:** 12 צבעים. לחיצה על העיגול בשורת השחקן פותחת בחירה. צבע תפוס מתחלף עם
-  בעליו במשחק מקומי, וחסום באונליין.
-- **שפות:** עברית ואנגלית ב-`js/i18n.js`, כולל כיוון הדף. דיאלוג פתוח מתורגם במקום.
+UI changes are also checked in a real browser (Playwright): desktop and phone, Hebrew
+and English, no console errors.

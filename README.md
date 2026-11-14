@@ -1,13 +1,14 @@
 # KAVOOM
 
-משחק קווים לדפדפן: כל שחקן משאיר שובל, ומי שנוגע בשובל או בקיר נפסל.
-2 עד 6 משתתפים על מכשיר אחד או אונליין, עם בוטים, בונוסים, עברית ואנגלית.
+A line game for the browser. Every player leaves a trail, and touching a trail or a wall
+knocks you out. 2 to 6 players on one device or online, with bots, power-ups, Hebrew
+and English.
 
-**לשחק:** https://kavoom.onrender.com
+**Play:** https://kavoom.onrender.com
 
-## הרצה מקומית
+## Run locally
 
-דורש Node 22 ומעלה.
+Requires Node 22 or later.
 
 ```
 npm install
@@ -15,40 +16,42 @@ npm start          # http://localhost:8080
 npm test
 ```
 
-השרת מגיש את האתר וגם מריץ את חדרי האונליין (WebSocket בנתיב `/ws`).
+The server serves the site and runs the online rooms (WebSocket at `/ws`).
 
-## ענפים וגרסאות
+## Branches and releases
 
-| ענף | תפקיד |
+| Branch | Role |
 | --- | --- |
-| `dev` | כל העבודה השוטפת. הבדיקות רצות על כל push. |
-| `main` | מה שעולה לאוויר. כל push לכאן הוא גרסה חדשה. |
+| `dev` | Day-to-day work. Tests run on every push. |
+| `main` | What is live. Every push here is a release. |
 
-עליית גרסה:
+To release:
 
-1. ב-`dev`: `npm run bump -- minor` (או `patch` לתיקון, `major` לשינוי גדול).
-2. commit בשם `Release vX.Y.Z`, ואז מיזוג `dev` אל `main`.
-3. GitHub יוצר לבד תגית ודף Release מתוך `CHANGELOG.md`, ו-Render מעלה את הגרסה תוך דקה-שתיים.
+1. On `dev`: `npm run bump -- minor` (`patch` for fixes, `major` for breaking changes).
+2. Commit as `Release vX.Y.Z`, then merge `dev` into `main`.
+3. GitHub tags the commit and publishes a release from `CHANGELOG.md`, and Render
+   deploys it within a minute or two.
 
-מספר הגרסה מופיע בתפריט המשחק.
+The version number is shown in the game menu.
 
-## העלאה לרשת (Render, חינם)
+## Deploy (Render, free)
 
-הקובץ `render.yaml` מגדיר שירות חינמי אחד באזור Frankfurt.
+`render.yaml` defines one free web service in the Frankfurt region.
 
-1. ב-render.com: New → Blueprint, בוחרים את הרפו, Apply.
-2. Render עוקב אחרי `main` ומעלה כל גרסה לבד.
+1. On render.com: New → Blueprint, pick this repository, Apply.
+2. Render follows `main` and deploys every release on its own.
 
-אזור של שירות נקבע כשהוא נוצר ואי אפשר לשנות אותו. כדי לעבור אזור מוחקים את השירות
-ויוצרים אותו מחדש מה-Blueprint.
+A service's region is fixed when it is created. To move regions, delete the service and
+create it again from the Blueprint.
 
-בשירות החינמי השרת נרדם אחרי 15 דקות בלי שימוש, והכניסה הראשונה אחרי זה לוקחת בערך
-דקה. אם האתר הסטטי מתארח במקום אחר מהשרת, מגדירים את כתובת השרת ב-`SERVER_URL`
-שב-`js/config.js` ואת כתובת האתר במשתנה הסביבה `ALLOWED_ORIGINS` של השרת.
+On the free plan the server sleeps after 15 minutes without traffic, and the first visit
+after that takes about a minute. If the static site is hosted somewhere else, set the
+server address in `SERVER_URL` in `js/config.js` and the site's origin in the server's
+`ALLOWED_ORIGINS` environment variable.
 
-## מקשים (מכשיר אחד)
+## Keys (one device)
 
-| שחקן | שמאלה / ימינה |
+| Player | Left / Right |
 | --- | --- |
 | 1 | ← → |
 | 2 | A D |
@@ -57,17 +60,18 @@ npm test
 | 5 | 1 Q |
 | 6 | 9 0 |
 
-אפשר להחליף כל מקש בתפריט. רווח משהה. באונליין: ← → או A D, ובטלפון כפתורי מגע.
+Any key can be rebound in the menu. Space pauses. Online: ← → or A D, and touch buttons
+on phones.
 
-## עוד
+## More
 
-- [DESIGN.md](DESIGN.md): תכנון מלא של המשחק
-- [CHANGELOG.md](CHANGELOG.md): מה השתנה בכל גרסה
-- [SECURITY.md](SECURITY.md): מה השרת שומר ואיך הוא מוגן
+- [DESIGN.md](DESIGN.md): full game design
+- [CHANGELOG.md](CHANGELOG.md): what changed in each version
+- [SECURITY.md](SECURITY.md): what the server stores and how it is protected
 
-## רישיון
+## License
 
-עדיין לא נבחר רישיון. עד אז כל הזכויות שמורות לבעל הרפו.
+No license has been chosen yet, so all rights are reserved by the repository owner.
 
-הגופנים Heebo ו-Secular One מגיעים מ-Google Fonts ברישיון SIL Open Font License.
-הספרייה ws ברישיון MIT.
+The Heebo and Secular One fonts come from Google Fonts under the SIL Open Font License.
+The ws library is under the MIT license.

@@ -7,6 +7,8 @@ breaking changes are major.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-14
+
 ### Added
 - The Back button (and the phone's back gesture) now steps back inside the game: it closes an open dialog, opens the game menu during a match, returns from a finished online match to the room, and leaves a room's lobby. It no longer throws you out of the site in the middle of a game.
 

@@ -33,7 +33,10 @@ export function Arena({ ui, touchHint }) {
     };
   }, []);
 
-  game.renderer.rotated = size.rotated;
+  useEffect(() => {
+    game.renderer.rotated = size.rotated;
+  }, [size.rotated]);
+
   useAnimationFrame((dt) => game.frame(dt));
 
   const { banner } = ui;

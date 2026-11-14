@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { game } from '../../engine/index.js';
 import { useBackLayer } from '../../hooks/useBackLayer.js';
+import { useWakeLock } from '../../hooks/useWakeLock.js';
 import { useMediaQuery } from '../../hooks/useMediaQuery.js';
 import { useSettings } from '../../state/SettingsContext.jsx';
 import { GameHud } from './GameHud.jsx';
@@ -68,7 +69,7 @@ export function GameScreen({ ui, online }) {
         else if (game.state === 'matchEnd') game.rematch();
         else pause();
       } else if (e.code === 'Escape') {
-        if (!dialog && game.canPause()) pause();
+        if (!dialog && game.state !== 'matchEnd') openMenu();
       } else if (game.isSteeringKey(e.code)) {
         e.preventDefault(); // keep arrows and other bound keys from scrolling the page
       }
@@ -89,14 +90,7 @@ export function GameScreen({ ui, online }) {
     if (ui.state === 'matchEnd') setDialog((d) => (d === 'settings' ? d : null));
   }, [ui.state]);
 
-  // Keep the screen on while playing, where the browser allows it.
-  useEffect(() => {
-    let lock = null;
-    try {
-      navigator.wakeLock?.request('screen').then((l) => (lock = l), () => {});
-    } catch { /* optional */ }
-    return () => lock?.release().catch(() => {});
-  }, []);
+  useWakeLock();
 
   const classes = ['screen', 'game', compact && 'compact', padOwners.length > 0 && 'touch', padOwners.length === 1 && 'solo'].filter(Boolean).join(' ');
 

@@ -64,12 +64,11 @@ export function useOnlineRoom(identity) {
         game.onlineRoundEnd(m);
         break;
       case 'error':
-        net.current.close();
-        net.current = null;
-        setStatus(ERRORS[m.code] || 'lost');
+        // Refused at the door, or the room is gone: either way we are not in one.
+        leave(Object.hasOwn(ERRORS, m.code) ? ERRORS[m.code] : 'lost');
         break;
     }
-  }, []);
+  }, [leave]);
 
   // first: the opening message, { t: 'create' } or { t: 'join', code }.
   const connect = useCallback(async (first) => {

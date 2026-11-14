@@ -34,6 +34,7 @@ const STRINGS = {
   modeBot: { he: 'בוט', en: 'Bot' },
   left: { he: 'שמאלה', en: 'Left' },
   right: { he: 'ימינה', en: 'Right' },
+  keySpace: { he: 'רווח', en: 'Space' },
   pressKey: { he: 'הקש מקש', en: 'Press a key' },
   pickColor: { he: 'בחירת צבע', en: 'Choose colour' },
   playerName: (n) => ({ he: `שם שחקן ${n}`, en: `Player ${n} name` }),

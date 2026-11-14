@@ -1,5 +1,9 @@
-// Tiny synthesized sound effects. The AudioContext is created on first use,
-// which always follows a click or key press.
+// Tiny synthesized sound effects.
+//
+// Browsers (iPhones most strictly) let a page make sound only after the person
+// has touched or pressed something, and only if the audio is switched on during
+// that very touch. unlock() is called on every touch, click and key press for
+// that reason; the first sound itself usually comes a moment later.
 
 export class Sfx {
   constructor() {
@@ -8,11 +12,21 @@ export class Sfx {
     this.ctx = null;
   }
 
-  tone(freq, dur, { type = 'square', vol = 0.06, to = freq, delay = 0 } = {}) {
-    if (!this.enabled || this.volume <= 0) return;
+  unlock() {
+    if (!this.enabled) return;
     try {
       if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+    } catch {
+      this.enabled = false; // no audio on this device: stay silent
+    }
+  }
+
+  tone(freq, dur, { type = 'square', vol = 0.06, to = freq, delay = 0 } = {}) {
+    if (!this.enabled || this.volume <= 0) return;
+    this.unlock();
+    if (!this.ctx || this.ctx.state !== 'running') return; // not allowed to play yet
+    try {
       const t = this.ctx.currentTime + delay;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LENGTHS } from '../../../shared/config.js';
+import { RESERVED_KEYS } from '../../engine/input.js';
 import { useSettings } from '../../state/SettingsContext.jsx';
 import { PlayerSlot } from './PlayerSlot.jsx';
 import { MatchSettings } from './MatchSettings.jsx';
@@ -17,6 +18,7 @@ export function LocalPane({ onStart }) {
     const onKey = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (e.code !== 'Escape' && RESERVED_KEYS.includes(e.code)) return; // Space pauses: keep listening
       setRebinding(null);
       if (e.code === 'Escape') return;
       update((s) => {

@@ -14,6 +14,13 @@ breaking changes are major.
 - The content policy now names the site's own WebSocket address (needed by older Safari) and a same-origin resource policy header was added.
 
 ### Fixed
+- Sound on iPhones: audio is now switched on from the first touch, as Safari requires.
+- Key names in the menu (Space, Shift, Ctrl, Alt) now follow the chosen language instead of always being Hebrew.
+- Space, Esc, Enter and Tab can no longer be picked as steering keys, where they clashed with pause.
+- Online: when the server closes a room, you are returned to the join form instead of a lobby that no longer exists.
+- The screen stays awake again after switching away from the game and back.
+- Esc opens the game menu in online matches too.
+- Dialogs keep keyboard focus inside them and hand it back when they close.
 - Online: after a reconnect (for example a phone moving from Wi-Fi to mobile data), the old connection timing out no longer handed your line to a bot.
 
 ## [1.2.0] - 2026-11-14

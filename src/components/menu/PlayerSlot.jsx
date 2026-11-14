@@ -51,7 +51,7 @@ export function PlayerSlot({ index, pickerOpen, onTogglePicker, listening, onLis
             <span key={side} className="slot-key">
               {label}
               <button type="button" className={`keycap${listening === side ? ' listening' : ''}`} onClick={() => onListen(side)}>
-                {listening === side ? t('pressKey') : keyLabel(p.keys[side])}
+                {listening === side ? t('pressKey') : keyLabel(p.keys[side], t)}
               </button>
             </span>
           ))}

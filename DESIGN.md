@@ -194,7 +194,8 @@ Touch:
   and below it in portrait. Touching the left or right half of the arena steers too.
 - Several humans on one touch screen: a pair of buttons in each player's colour, up to four.
 - Buttons appear automatically on touch devices and can be forced on or off in settings.
-- Full screen (with a landscape lock where the browser allows it) and a screen wake lock.
+- Full screen, and a screen wake lock that is taken again when the tab comes back.
+- Space, Esc, Enter and Tab cannot be bound as steering keys.
 
 ## 8. Drawing
 

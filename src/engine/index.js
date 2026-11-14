@@ -8,3 +8,8 @@ import { Game } from './game.js';
 export const input = new Input();
 export const sfx = new Sfx();
 export const game = new Game({ input, sfx });
+
+// See audio.js: sound has to be switched on from inside a touch or key press.
+for (const event of ['pointerdown', 'pointerup', 'keydown']) {
+  window.addEventListener(event, () => sfx.unlock(), { capture: true, passive: true });
+}

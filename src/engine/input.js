@@ -58,16 +58,26 @@ export class Input {
 }
 
 const ARROWS = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' };
-const NAMED = {
-  Space: 'רווח', Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']',
+const SYMBOLS = {
+  Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", BracketLeft: '[', BracketRight: ']',
   Minus: '-', Equal: '=', Backslash: '\\', Backquote: '`', Enter: 'Enter', Tab: 'Tab',
-  ShiftLeft: 'Shift שמאל', ShiftRight: 'Shift ימין', ControlLeft: 'Ctrl שמאל', ControlRight: 'Ctrl ימין',
-  AltLeft: 'Alt שמאל', AltRight: 'Alt ימין',
+};
+// Keys whose name is a word: [strings.js key for the side or the name, the key's own name].
+const WORDS = {
+  Space: ['keySpace', ''],
+  ShiftLeft: ['left', 'Shift'], ShiftRight: ['right', 'Shift'],
+  ControlLeft: ['left', 'Ctrl'], ControlRight: ['right', 'Ctrl'],
+  AltLeft: ['left', 'Alt'], AltRight: ['right', 'Alt'],
 };
 
-export function keyLabel(code) {
+// Keys that already mean something in the game and cannot be steering keys.
+export const RESERVED_KEYS = ['Space', 'Escape', 'Enter', 'Tab'];
+
+// What to print on a key cap. t is the translate function, for the few keys named by a word.
+export function keyLabel(code, t) {
   if (ARROWS[code]) return ARROWS[code];
-  if (NAMED[code]) return NAMED[code];
+  if (SYMBOLS[code]) return SYMBOLS[code];
+  if (WORDS[code]) return `${WORDS[code][1]} ${t(WORDS[code][0])}`.trim();
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
   if (code.startsWith('Numpad')) return 'Num ' + code.slice(6);

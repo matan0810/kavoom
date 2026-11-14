@@ -3,7 +3,7 @@
 // Local: this file runs the simulation. Online: the server runs it and this
 // file draws the snapshots it sends.
 
-import { ARENA, DT, PALETTE, PLAYER_COLORS, DEFAULT_COLORS, DEFAULT_KEYS, LENGTHS, POWERUPS, FX_KEYS, SERVER_URL, MAX_PLAYERS, makeRng } from './config.js';
+import { VERSION, ARENA, DT, PALETTE, PLAYER_COLORS, DEFAULT_COLORS, DEFAULT_KEYS, LENGTHS, POWERUPS, FX_KEYS, SERVER_URL, MAX_PLAYERS, makeRng } from './config.js';
 import { Round } from './sim/round.js';
 import { Match } from './sim/match.js';
 import { Renderer } from './render.js';
@@ -22,9 +22,21 @@ const NO_FX = Object.fromEntries(FX_KEYS.map((k) => [k, 0]));
 
 // ---------- Settings ----------
 
+// Hebrew for anyone whose browser prefers Hebrew or whose clock is set to Israel;
+// English for everyone else. A language picked in the menu is remembered.
+function detectLang() {
+  const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''];
+  if (langs.some((l) => /^(he|iw)\b/i.test(l))) return 'he';
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (zone === 'Asia/Jerusalem' || zone === 'Asia/Tel_Aviv') return 'he';
+  } catch { /* no Intl: fall through */ }
+  return 'en';
+}
+
 function defaults() {
   return {
-    lang: (navigator.language || 'he').startsWith('he') ? 'he' : 'en',
+    lang: detectLang(),
     tab: 'local',
     players: DEFAULT_COLORS.map((color, i) => ({
       mode: i === 0 ? 'human' : i < 3 ? 'bot' : 'off',
@@ -988,6 +1000,7 @@ if (linked) {
   online.code = linked[1].toUpperCase();
 }
 
+$('version').textContent = `v${VERSION}`;
 renderAll();
 newDemo();
 if (reducedMotion) for (let i = 0; i < 120 * 5 && !demo.over; i++) demo.step(); // a still frame with some trails on it

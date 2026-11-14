@@ -1,0 +1,37 @@
+# Every push to main is a release. If package.json holds a version that has
+# no tag yet, this tags the commit and publishes a GitHub release with the
+# matching CHANGELOG.md section. Render deploys main on its own.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Tag and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag is already released"
+            exit 0
+          fi
+          node scripts/release-notes.mjs "$version" > notes.md
+          gh release create "$tag" --target "$GITHUB_SHA" --title "KAVOOM $tag" --notes-file notes.md

@@ -245,3 +245,10 @@ test('bot rounds always finish with a consistent result', () => {
     assert.ok(r.points.every((p) => p >= 0 && p <= 5));
   }
 });
+
+test('the game version matches package.json', async () => {
+  const { VERSION } = await import('../js/config.js');
+  const { readFile } = await import('node:fs/promises');
+  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(VERSION, pkg.version);
+});

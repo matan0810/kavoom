@@ -1,24 +1,19 @@
-name: Tests
+# Day-to-day work: every push to dev, and every pull request, runs all checks.
+name: CI
 
 on:
   push:
     branches: [dev]
   pull_request:
-    branches: [main]
+    branches: [dev, main]
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
+  checks:
+    uses: ./.github/workflows/checks.yml

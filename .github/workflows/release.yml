@@ -1,6 +1,7 @@
-# Every push to main is a release. If package.json holds a version that has
-# no tag yet, this tags the commit and publishes a GitHub release with the
-# matching CHANGELOG.md section. Render deploys main on its own.
+# Every push to main is a release. All checks run first; only if they pass, and
+# package.json holds a version that has no tag yet, the commit is tagged and a
+# GitHub release is published with the matching CHANGELOG.md section.
+# Render deploys main on its own (see render.yaml).
 name: Release
 
 on:
@@ -8,11 +9,18 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  checks:
+    uses: ./.github/workflows/checks.yml
+
   release:
+    name: Tag and publish
+    needs: checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -20,11 +28,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
       - name: Tag and publish the release
         env:
           GH_TOKEN: ${{ github.token }}

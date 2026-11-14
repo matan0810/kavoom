@@ -1,0 +1,64 @@
+# Every check a commit must pass. Used by ci.yml (dev) and release.yml (main),
+# so a release runs exactly what day-to-day work runs.
+name: Checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  code:
+    name: Lint, format, audit, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Known vulnerabilities in dependencies
+        run: npm audit --audit-level=high
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+  browser:
+    name: Browser tests (desktop, phone, online, offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run e2e
+
+  production-build:
+    name: Build and start the way Render does
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # The same two commands as render.yaml (buildCommand, startCommand).
+      - run: npm ci --include=dev && npm run build
+      - name: Start the server and ask it for the page
+        run: |
+          PORT=8080 npm start &
+          for i in $(seq 1 20); do
+            curl -fsS http://localhost:8080/healthz && break
+            sleep 0.5
+          done
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          curl -fsS -o /dev/null http://localhost:8080/sw.js

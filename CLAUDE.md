@@ -22,7 +22,7 @@ This file is binding. Follow it on every task, in every session.
 
 | Branch | Role | Who writes |
 | --- | --- | --- |
-| `dev` | Integration. Every task lands here. CI runs the tests on every push. | Claude |
+| `dev` | Integration. Every task lands here. CI runs every check on every push. | Claude |
 | `main` | Production. Every push is a release: GitHub tags it and Render deploys it. | Claude, only on a release order |
 | `dependabot/*` | Dependency updates opened against `dev`. | Dependabot |
 
@@ -71,6 +71,20 @@ behaviour changed, pushed to `dev`, CI green, owner told.
 - A blank line and a short body when the reason is not obvious.
 - One topic per commit. Release commits are exactly `Release vX.Y.Z`.
 
+### What CI runs
+
+`.github/workflows/checks.yml`, on every push to `dev`, every pull request, and again on
+`main` before a release is tagged:
+
+| Job | What it proves |
+| --- | --- |
+| Lint, format, audit, unit tests | `npm audit` (high and up), `npm run lint`, `npm run format:check`, `npm test` |
+| Browser tests | `npm run e2e` in Chromium: desktop, phone, online with two players, offline |
+| Build and start the way Render does | `render.yaml`'s build and start commands work with `NODE_ENV=production` |
+
+A release is tagged only if all three pass. A new check belongs in `checks.yml`, so `dev`
+and `main` can never drift apart.
+
 ## 4. Versions
 
 Semantic versioning, `MAJOR.MINOR.PATCH`:
@@ -105,7 +119,7 @@ git checkout dev
 ```
 
 ### After
-- [ ] The `Release` workflow on `main` succeeded and https://github.com/matan0810/kavoom/releases
+- [ ] The `Release` workflow on `main` succeeded (all three check jobs, then the tag) and https://github.com/matan0810/kavoom/releases
       shows `vX.Y.Z` with the CHANGELOG text.
 - [ ] Render has deployed. Cloud sessions cannot reach the live site, so ask the owner
       to open it and confirm the menu shows `vX.Y.Z`.
@@ -162,7 +176,8 @@ scripts/bump.mjs              version bump for a release
 scripts/release-notes.mjs     CHANGELOG section for the GitHub release
 tests/                        node --test: sim, room, server, engine, back button, layout, settings
 tests/e2e/                    browser smoke test (npm run e2e), not part of npm test
-.github/workflows/            ci.yml (tests on dev), release.yml (tag and release on main)
+.github/workflows/            checks.yml (every check, shared), ci.yml (dev and pull requests),
+                              release.yml (checks, then tag and release on main)
 render.yaml                   Render service: free plan, Frankfurt, builds and deploys main
 DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
 ```
@@ -185,7 +200,8 @@ DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
 - `npm test`: builds, then runs every test; must pass before any push
 - `npm run lint`: ESLint; must pass before any push (CI runs it)
 - `npm run format`: Prettier rewrites the files; `npm run format:check` only checks (CI runs it)
-- `npm run e2e`: browser smoke test (needs Playwright and a prior `npm run build`)
+- `npm run e2e`: browser smoke test (needs a prior `npm run build`; Playwright is a dev
+  dependency pinned to the version preinstalled in cloud sessions, so do not upgrade it alone)
 - `npm run bump -- patch|minor|major`: prepare a release
 
 ## 10. Security rules

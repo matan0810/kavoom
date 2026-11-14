@@ -17,7 +17,7 @@ npm start          # http://localhost:8080
 npm run lint       # ESLint
 npm run format     # Prettier
 npm test           # builds, then runs every test
-npm run e2e        # browser smoke test; needs Playwright and a prior build
+npm run e2e        # browser smoke test; needs a prior build
 ```
 
 The browser side is a React app built with Vite. The Node server serves the built files
@@ -30,7 +30,7 @@ While working on the page, `npm run dev` gives instant reload on http://localhos
 
 | Branch | Role |
 | --- | --- |
-| `dev` | Day-to-day work. Tests run on every push. |
+| `dev` | Day-to-day work. Lint, unit tests, browser tests and a production build run on every push. |
 | `main` | What is live. Every push here is a release. |
 
 To release:

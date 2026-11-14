@@ -305,7 +305,9 @@ Nobody can cheat from the browser, and everyone sees the same game.
 - Version: `shared/config.js` matches `package.json`.
 
 `npm run e2e` is a browser smoke test (Playwright, Chromium): desktop and phone, Hebrew and
-English, the tall arena and big buttons, the Back button in every situation, and an online
-match between a desktop host and a phone guest. It checks for console errors and CSP
-violations. It is not part of `npm test`, so CI and the Render build need no browser.
-Safari and Firefox are not covered; a real phone is checked by hand after a release.
+English, the tall arena and big buttons, the Back button in every situation, an online match
+between a desktop host and a phone guest (invite, lock, remove), and offline play from the
+saved copy. It checks for console errors and CSP violations. It is a separate command from
+`npm test` because it needs a browser; CI runs both, plus a production build and start, on
+every push and before every release. Safari and Firefox are not covered; a real phone is
+checked by hand after a release.

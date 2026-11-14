@@ -11,7 +11,8 @@
     "start": "node server/server.js",
     "pretest": "vite build --logLevel warn",
     "test": "node --test tests/*.test.js",
-    "bump": "node scripts/bump.mjs"
+    "bump": "node scripts/bump.mjs",
+    "e2e": "node tests/e2e/smoke.cjs"
   },
   "dependencies": {
     "react": "^19.3.1",

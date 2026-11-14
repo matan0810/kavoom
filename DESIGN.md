@@ -247,7 +247,7 @@ Nobody can cheat from the browser, and everyone sees the same game.
 
 ## 11. Tests
 
-`npm test` (node --test):
+`npm test` (node --test) builds the site first, then runs:
 - Simulation: walls, open walls, opponent trails, head-on collisions, no self-collision
   at any speed and width, gaps, ghost, scoring, power-up targets, reversed keys, pickups,
   match target and 2-point lead, determinism with a seed, bot survival.
@@ -255,9 +255,17 @@ Nobody can cheat from the browser, and everyone sees the same game.
 - Server: security headers, the built page with no inline code, malformed URLs, only public
   files served, path traversal, WebSocket origin check, junk and oversized messages,
   per-address connection cap.
+- Engine (`tests/engine.test.js`): the match state machine without a browser: countdown,
+  pause, steering, whole matches between bots, rematch, and the online round, snapshot,
+  knockout and match-end messages.
+- Back button (`tests/backbutton.test.js`): against a fake browser history: one entry per
+  layer, Back closes the top layer, no double Back, sticky game layer, Forward undone.
+- Layout and renderer: when the arena turns upright, and that the turn is a pure rotation.
+- Settings: bad saved values are replaced or clamped, language detection.
 - Version: `shared/config.js` matches `package.json`.
 
-`npm test` builds the site first, so the server tests run against the real `dist/`.
-
-UI changes are also checked in a real browser (Playwright): desktop and phone, Hebrew
-and English, no console errors.
+`npm run e2e` is a browser smoke test (Playwright, Chromium): desktop and phone, Hebrew and
+English, the tall arena and big buttons, the Back button in every situation, and an online
+match between a desktop host and a phone guest. It checks for console errors and CSP
+violations. It is not part of `npm test`, so CI and the Render build need no browser.
+Safari and Firefox are not covered; a real phone is checked by hand after a release.

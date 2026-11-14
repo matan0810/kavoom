@@ -49,8 +49,9 @@ If `dev` is behind `main`, stop and tell the owner; that should never happen.
    - New logic gets a test: simulation in `tests/sim.test.js`, rooms in
      `tests/room.test.js`, HTTP or WebSocket behaviour in `tests/server.test.js`.
    - Any UI change is checked in a real browser (Playwright is preinstalled in cloud
-     sessions; run `npm run build`, then `npm start`, and drive it): desktop 1280×800 and a 390px phone,
-     Hebrew and English, no console errors or CSP violations. Look at the screenshots.
+     sessions): run `npm run build && npm run e2e` (add to `tests/e2e/smoke.cjs` for new
+     screens or flows), and also look at screenshots: desktop 1280×800 and a 390px phone,
+     Hebrew and English, no console errors or CSP violations.
    - Online changes are tested with two browser contexts in the same room.
 5. **Record.** Add a line under `## [Unreleased]` in `CHANGELOG.md` for every change
    a player or the owner would notice, under Added, Changed, Fixed, Removed or Security.
@@ -156,7 +157,8 @@ server/server.js              static files from dist/, WebSocket rooms, security
 server/room.js                one room: lobby, match, broadcast (no sockets, unit tested)
 scripts/bump.mjs              version bump for a release
 scripts/release-notes.mjs     CHANGELOG section for the GitHub release
-tests/                        node --test: sim, room, server
+tests/                        node --test: sim, room, server, engine, back button, layout, settings
+tests/e2e/                    browser smoke test (npm run e2e), not part of npm test
 .github/workflows/            ci.yml (tests on dev), release.yml (tag and release on main)
 render.yaml                   Render service: free plan, Frankfurt, builds and deploys main
 DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
@@ -176,6 +178,7 @@ DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
 - `npm run dev`: Vite dev server with instant reload on http://localhost:5173; run
   `npm start` beside it for online rooms
 - `npm test`: builds, then runs every test; must pass before any push
+- `npm run e2e`: browser smoke test (needs Playwright and a prior `npm run build`)
 - `npm run bump -- patch|minor|major`: prepare a release
 
 ## 10. Security rules

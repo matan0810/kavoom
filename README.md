@@ -14,7 +14,8 @@ Requires Node 22 or later.
 npm install
 npm run build      # React app -> dist/
 npm start          # http://localhost:8080
-npm test
+npm test           # builds, then runs every test
+npm run e2e        # browser smoke test; needs Playwright and a prior build
 ```
 
 The browser side is a React app built with Vite. The Node server serves the built files

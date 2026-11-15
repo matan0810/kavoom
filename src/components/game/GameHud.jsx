@@ -32,7 +32,7 @@ export function GameHud({ ui, compact, onMenu, onPause, onResume, onSettings, on
         <span className="round-label">{t('round', ui.roundNo)}</span>
       </div>
       <Scoreboard players={ui.players} />
-      <p className="hint target">{t('target', ui.target)}</p>
+      <p className="hint target">{t('target', ui.target, ui.lead === 2)}</p>
       <div className="side-actions">
         {compact ? (
           <button

@@ -73,6 +73,7 @@ export function RoomLobby({ online }) {
 
       <MatchSettings
         values={room.settings}
+        players={Math.max(2, count)}
         disabled={!isHost || !inLobby}
         onChange={(key, val) => online.send({ t: 'set', key, val })}
       />

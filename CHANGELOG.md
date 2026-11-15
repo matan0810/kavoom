@@ -7,6 +7,10 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Added
+- Match length shows the actual points for the players in the game (for example Normal · 20 with three players), and Other lets you type your own number of points to win.
+- Win by 2 can be turned off: then the first player to reach the target wins (players level at the top still play on).
+
 ### Fixed
 - If the server was asleep when the game was opened, its saved copy could be replaced by the host's "application loading" page. Only the real game page is saved now.
 

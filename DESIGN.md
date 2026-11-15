@@ -150,8 +150,13 @@ A circle of radius 15 on the arena. Its ring colour shows who it affects.
 
 - On every knockout, everyone still alive gets a point. The round winner ends with N-1.
 - If the last players die in the same step, nobody gets the final point and the round is a draw.
-- Target: 5, 10 or 15 points times (N-1), by match length.
-- The match ends when someone reaches the target with a lead of at least 2. Otherwise play continues.
+- Target: 5, 10 or 15 points times (N-1), by match length (short, normal, long). Each knockout
+  pays a point to everyone still alive, so a round holds N(N-1)/2 points, and this keeps a
+  match at about the same number of rounds for any N: with bots, a normal match is about 17
+  rounds and 8 to 9 minutes for 2 to 6 players. The menu shows the resulting number on each
+  choice. "Other" is a typed target, 1 to 300, that does not scale.
+- Win by 2 (on by default): the match ends when someone reaches the target with a lead of at
+  least 2. Turned off, a lead of 1 is enough. Players level at the top always play on.
 
 ```
 menu → countdown (3, 2, 1) → playing → round end → countdown ...

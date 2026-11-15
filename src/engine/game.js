@@ -7,7 +7,7 @@
 // that is replaced whenever something visible changes) through useGameUi(),
 // and call the methods below.
 
-import { ARENA, DT, PALETTE, LENGTHS, makeRng } from '../../shared/config.js';
+import { ARENA, DT, PALETTE, makeRng } from '../../shared/config.js';
 import { decodeSegment, decodeSnapshot } from '../../shared/protocol.js';
 import { Round } from '../../shared/sim/round.js';
 import { Match } from '../../shared/sim/match.js';
@@ -45,7 +45,7 @@ export class Game {
     this.match = null;
     this.round = null;
     this.view = null; // what the renderer draws: a Round, or a snapshot shaped like one
-    this.hud = { names: [], colors: [], scores: [], live: null, target: 0, roundNo: 1 };
+    this.hud = { names: [], colors: [], scores: [], live: null, target: 0, lead: 2, roundNo: 1 };
     this.acc = 0;
     this.timer = 0;
     this.count = 0; // countdown number on screen, 0 for none
@@ -90,6 +90,7 @@ export class Game {
       paused: this.paused,
       roundNo: hud.roundNo,
       target: hud.target,
+      lead: hud.lead,
       count: this.count,
       banner: this.banner,
       result: this.result,
@@ -106,18 +107,19 @@ export class Game {
 
   // ---------- Local match ----------
 
-  // setup: { players: [{ name, color, human, keys }], botLevel, powerups, length }
+  // setup: { players: [{ name, color, human, keys }], botLevel, powerups, target, lead }
   startLocal(setup) {
     if (setup.players.length < 2) return;
     this.setup = setup;
     this.mode = 'local';
-    this.match = new Match(setup.players.length, LENGTHS[setup.length]);
+    this.match = new Match(setup.players.length, setup.target, setup.lead);
     this.hud = {
       names: setup.players.map((p) => p.name),
       colors: setup.players.map((p) => p.color),
       scores: this.match.scores,
       live: null,
       target: this.match.target,
+      lead: this.match.lead,
       roundNo: 1,
     };
     this.startRound();
@@ -242,6 +244,7 @@ export class Game {
       scores: m.scores,
       live: m.order.map(() => 0),
       target: m.target,
+      lead: m.lead ?? 2, // a server from before this setting always played to a lead of 2
       roundNo: m.roundNo,
     };
     this.renderer.reset(this.hud.colors);

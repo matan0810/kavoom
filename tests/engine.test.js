@@ -27,7 +27,8 @@ const setup = (players, extra = {}) => ({
   players,
   botLevel: 'medium',
   powerups: false,
-  length: 'short',
+  target: 5,
+  lead: 2,
   ...extra,
 });
 
@@ -331,4 +332,23 @@ test('online, our own head is drawn ahead of the server once the round trip is k
   // Knocked out, or only watching: nothing to predict.
   game.onlineSnapshot(snap({ p: [player(100, 100, 0), player(300, 200)] }));
   assert.equal(game.predictedHead(), null);
+});
+
+test('a local match is played to the target and lead it was given', () => {
+  const game = new Game({ input: makeInput(), sfx: quiet });
+  game.startLocal(setup(bots(2), { target: 3, lead: 1 }));
+  assert.equal(game.ui.target, 3);
+  assert.equal(game.ui.lead, 1);
+  for (let i = 0; i < 40000 && game.ui.state !== 'matchEnd'; i++) game.frame(0.1);
+  const scores = game.ui.players.map((p) => p.score);
+  const top = Math.max(...scores);
+  assert.ok(top >= 3 && top - Math.min(...scores) >= 1);
+});
+
+test('an online round takes its lead from the server, and 2 from an older one', () => {
+  const game = new Game({ input: makeInput(), sfx: quiet });
+  game.onlineRound(roundMsg({ lead: 1 }), 7);
+  assert.equal(game.ui.lead, 1);
+  game.onlineRound(roundMsg(), 7);
+  assert.equal(game.ui.lead, 2);
 });

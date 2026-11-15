@@ -5,7 +5,9 @@ import {
   PALETTE,
   DEFAULT_COLORS,
   DEFAULT_KEYS,
-  LENGTHS,
+  LENGTH_CHOICES,
+  DEFAULT_CUSTOM_TARGET,
+  clampTarget,
   MAX_PLAYERS,
 } from '../../shared/config.js';
 
@@ -43,6 +45,8 @@ function defaults() {
       keys: [...DEFAULT_KEYS[i]],
     })),
     length: 'normal',
+    target: DEFAULT_CUSTOM_TARGET, // used when length is 'custom'
+    winBy2: 'on',
     botLevel: 'medium',
     powerups: 'on',
     sound: 'on',
@@ -57,7 +61,8 @@ function defaults() {
 const CHOICES = {
   lang: ['he', 'en'],
   tab: ['local', 'online'],
-  length: Object.keys(LENGTHS),
+  length: LENGTH_CHOICES,
+  winBy2: ['on', 'off'],
   botLevel: ['easy', 'medium', 'hard'],
   powerups: ['on', 'off'],
   sound: ['on', 'off'],
@@ -73,6 +78,7 @@ export function loadSettings() {
     if (saved) {
       for (const k in CHOICES) if (CHOICES[k].includes(saved[k])) base[k] = saved[k];
       if (typeof saved.volume === 'number') base.volume = Math.min(1, Math.max(0, saved.volume));
+      if (typeof saved.target === 'number') base.target = clampTarget(saved.target);
       (saved.players || []).slice(0, MAX_PLAYERS).forEach((p, i) => {
         const slot = base.players[i];
         if (['human', 'bot', 'off'].includes(p.mode)) slot.mode = p.mode;

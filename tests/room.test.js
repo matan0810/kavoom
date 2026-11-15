@@ -170,7 +170,7 @@ test('setting keys that are not settings are ignored without an error', () => {
     assert.doesNotThrow(() => room.handle(room.hostId, { t: 'set', key, val: 'x' }));
   }
   assert.equal(room.settings.length, 'normal');
-  assert.equal(Object.keys(room.settings).length, 4);
+  assert.equal(Object.keys(room.settings).length, 6);
 });
 
 test('a locked room takes no newcomers, but a player who dropped can still come back', () => {
@@ -256,4 +256,50 @@ test('a ping is echoed to the one who sent it, with a safe number', () => {
   assert.equal(b.last('pong'), undefined);
   room.handle(ma.id, { t: 'ping', c: 'x'.repeat(500) });
   assert.deepEqual(a.last('pong'), { t: 'pong', c: 0 });
+});
+
+test('the host can set a custom target and turn win-by-2 off; numbers are clamped', () => {
+  const { room, a, ma, mb } = setup();
+  room.handle(mb.id, { t: 'set', key: 'target', val: 7 });
+  assert.equal(room.settings.target, 20, 'a guest cannot');
+  for (const [val, want] of [
+    [7, 7],
+    [7.6, 8],
+    [0, 1],
+    [-50, 1],
+    [1e9, 300],
+  ]) {
+    room.handle(ma.id, { t: 'set', key: 'target', val });
+    assert.equal(room.settings.target, want, String(val));
+  }
+  for (const bad of ['12', null, [3], { n: 3 }, NaN]) {
+    room.handle(ma.id, { t: 'set', key: 'target', val: bad });
+    assert.equal(room.settings.target, 300, String(bad));
+  }
+  room.handle(ma.id, { t: 'set', key: 'target', val: 4 });
+  room.handle(ma.id, { t: 'set', key: 'length', val: 'custom' });
+  room.handle(ma.id, { t: 'set', key: 'winBy2', val: 'off' });
+  room.handle(ma.id, { t: 'set', key: 'winBy2', val: 'maybe' });
+  assert.equal(a.last('room').settings.winBy2, 'off');
+
+  room.handle(ma.id, { t: 'start' });
+  const round = a.last('round');
+  assert.equal(round.target, 4);
+  assert.equal(round.lead, 1);
+});
+
+test('a preset length scales with the players in the room', () => {
+  const { room, a, ma } = setup();
+  room.handle(ma.id, { t: 'addBot' });
+  room.handle(ma.id, { t: 'set', key: 'length', val: 'long' });
+  room.handle(ma.id, { t: 'start' });
+  assert.equal(a.last('round').target, 30); // 15 per rival, 2 rivals
+  assert.equal(a.last('round').lead, 2);
+});
+
+test('nothing about the target changes once the match is on', () => {
+  const { room, ma } = setup();
+  room.handle(ma.id, { t: 'start' });
+  room.handle(ma.id, { t: 'set', key: 'target', val: 3 });
+  assert.equal(room.settings.target, 20);
 });

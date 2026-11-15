@@ -204,6 +204,12 @@ input[type='range'] {
   font-weight: 400;
 }
 
+.field.number {
+  width: 7em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .swatches {
   display: flex;
   flex-wrap: wrap;

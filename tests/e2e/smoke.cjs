@@ -182,6 +182,19 @@ async function main() {
     await settle(d, 250);
     assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true, 'Esc pauses');
     step(`desktop ${locale}: rail, Space and Esc`);
+    if (locale === 'en-US') {
+      // Match rules: a typed target and no win-by-2, shown in the hint and in the game.
+      await d.click('.overlay-actions .btn:last-child'); // the pause dialog is open: main menu
+      await d.click('.seg[aria-label="Match length"] button:nth-child(4)'); // Other
+      await d.fill('.field.number', '3');
+      await d.click('.seg[aria-label="Win by 2"] button:nth-child(2)'); // off
+      assert.match(await text(d, '.start-bar .hint'), /first to 3\.$/);
+      await d.click('.start-bar .btn');
+      await settle(d, 400);
+      assert.equal(await text(d, '.target'), 'First to 3');
+      assert.equal(await d.evaluate(() => window.__kavoom.game.match.lead), 1);
+      step('desktop: a typed target and no win-by-2 reach the match');
+    }
   }
 
   // ---------- Online: a desktop host and a phone guest ----------
@@ -239,6 +252,13 @@ async function main() {
   await guest.click('.join-row .btn');
   await guest.waitForSelector('.room-code');
   step('online: locked door turns newcomers away; the host can remove a player');
+
+  // The host's match rules reach the guest, who can see but not change them.
+  await host.click('.seg[aria-label="Match length"] button:nth-child(4)'); // Other
+  await host.fill('.field.number', '9');
+  await guest.waitForFunction(() => document.querySelector('.field.number')?.value === '9');
+  assert.equal(await guest.$eval('.field.number', (n) => n.disabled), true);
+  step('online: a custom target set by the host shows for the guest');
 
   await host.click('.room-actions .btn.primary');
   await guest.waitForSelector('.game');

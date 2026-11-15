@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ARENA, BASE, POWERUPS, makeRng } from '../shared/config.js';
+import {
+  ARENA,
+  BASE,
+  POWERUPS,
+  clampTarget,
+  leadFor,
+  makeRng,
+  matchTarget,
+} from '../shared/config.js';
 import { Round } from '../shared/sim/round.js';
 import { Match } from '../shared/sim/match.js';
 
@@ -207,7 +215,7 @@ test('items are picked up by driving over them', () => {
 });
 
 test('match needs the target and a two point lead', () => {
-  const m = new Match(3, 5); // target 10
+  const m = new Match(3, 10); // to 10, win by 2
   assert.equal(m.target, 10);
   m.applyRound([9, 9, 0]);
   assert.equal(m.winner(), -1);
@@ -264,4 +272,29 @@ test('the game version matches package.json', async () => {
   const { readFile } = await import('node:fs/promises');
   const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(VERSION, pkg.version);
+});
+
+test('without win by 2, the first to the target wins; level at the top still plays on', () => {
+  const m = new Match(3, 10, 1);
+  m.applyRound([9, 9, 0]);
+  assert.equal(m.winner(), -1);
+  m.applyRound([1, 0, 0]);
+  assert.equal(m.winner(), 0, '10 to 9 is enough');
+  const level = new Match(2, 10, 1);
+  level.applyRound([10, 10]);
+  assert.equal(level.winner(), -1, 'nobody is ahead');
+});
+
+test('the target follows the length and the number of players', () => {
+  assert.equal(matchTarget('normal', 2), 10);
+  assert.equal(matchTarget('normal', 3), 20);
+  assert.equal(matchTarget('short', 6), 25);
+  assert.equal(matchTarget('long', 6), 75);
+  assert.equal(matchTarget('custom', 6, 12), 12, 'a typed number does not scale');
+  assert.equal(matchTarget('nonsense', 3), 20);
+  assert.equal(clampTarget('abc'), 20);
+  assert.equal(clampTarget(0), 1);
+  assert.equal(clampTarget(301), 300);
+  assert.equal(leadFor('on'), 2);
+  assert.equal(leadFor('off'), 1);
 });

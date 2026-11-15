@@ -1,7 +1,7 @@
 // The "one device" tab: the six player rows, the match settings and Start.
 
 import { useEffect, useState } from 'react';
-import { LENGTHS } from '../../../shared/config.js';
+import { matchTarget } from '../../../shared/config.js';
 import { RESERVED_KEYS } from '../../engine/input.js';
 import { useSettings } from '../../state/SettingsContext.jsx';
 import { PlayerSlot } from './PlayerSlot.jsx';
@@ -58,6 +58,7 @@ export function LocalPane({ onStart }) {
         <h2>{t('settings')}</h2>
         <MatchSettings
           values={settings}
+          players={Math.max(2, active)}
           onChange={(key, val) =>
             update((s) => {
               s[key] = val;
@@ -82,7 +83,12 @@ export function LocalPane({ onStart }) {
         <p className="hint">
           {active < 2
             ? t('needTwo')
-            : t('startHint', active, LENGTHS[settings.length] * (active - 1))}
+            : t(
+                'startHint',
+                active,
+                matchTarget(settings.length, active, settings.target),
+                settings.winBy2 === 'on',
+              )}
         </p>
       </div>
     </div>

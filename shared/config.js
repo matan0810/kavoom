@@ -76,7 +76,30 @@ export const BOT_LEVELS = {
   hard: { look: 190, every: 4, mistake: 0, seek: true, heads: true, adapt: 0.4 },
 };
 
+// Points to win, per rival: a match of N players is played to LENGTHS[length] x (N - 1).
+// Every knockout pays a point to everyone still alive, so with more players there are
+// more points in every round, and a match lasts about the same number of rounds
+// whatever the number of players. 'custom' is a target the players type themselves.
 export const LENGTHS = { short: 5, normal: 10, long: 15 };
+export const LENGTH_CHOICES = [...Object.keys(LENGTHS), 'custom'];
+export const TARGET_LIMITS = { min: 1, max: 300 };
+export const DEFAULT_CUSTOM_TARGET = 20;
+
+// Any value as a usable custom target: a whole number within the limits.
+export function clampTarget(value) {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return DEFAULT_CUSTOM_TARGET;
+  return Math.min(TARGET_LIMITS.max, Math.max(TARGET_LIMITS.min, n));
+}
+
+// The points a match is played to.
+export function matchTarget(length, players, customTarget) {
+  if (length === 'custom') return clampTarget(customTarget);
+  return (LENGTHS[length] ?? LENGTHS.normal) * Math.max(1, players - 1);
+}
+
+// The lead a winner needs at the target: 2 with "win by 2", otherwise 1 (simply ahead).
+export const leadFor = (winBy2) => (winBy2 === 'off' ? 1 : 2);
 
 // Small seedable PRNG (mulberry32).
 export function makeRng(seed) {

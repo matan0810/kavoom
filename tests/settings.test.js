@@ -124,3 +124,14 @@ test('saving writes JSON that loads back the same', () => {
     restore();
   }
 });
+
+test('a saved custom target and win-by-2 choice are kept, within limits', () => {
+  const s = withEnv({ stored: { length: 'custom', target: 7, winBy2: 'off' } }, loadSettings);
+  assert.equal(s.length, 'custom');
+  assert.equal(s.target, 7);
+  assert.equal(s.winBy2, 'off');
+  const bad = withEnv({ stored: { target: 99999, winBy2: 'sometimes' } }, loadSettings);
+  assert.equal(bad.target, 300);
+  assert.equal(bad.winBy2, 'on');
+  assert.equal(withEnv({ stored: { target: 'ten' } }, loadSettings).target, 20);
+});

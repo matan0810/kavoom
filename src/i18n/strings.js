@@ -26,9 +26,9 @@ const STRINGS = {
   auto: { he: 'אוטומטי', en: 'Auto' },
   start: { he: 'התחל משחק', en: 'Start game' },
   needTwo: { he: 'צריך לפחות שני משתתפים.', en: 'At least two players are needed.' },
-  startHint: (n, target) => ({
-    he: `${n} משתתפים, עד ${target} נקודות בהפרש 2.`,
-    en: `${n} players, first to ${target}, win by 2.`,
+  startHint: (n, target, by2) => ({
+    he: `${n} משתתפים, עד ${target} נקודות${by2 ? ' בהפרש 2' : ''}.`,
+    en: `${n} players, first to ${target}${by2 ? ', win by 2' : ''}.`,
   }),
   howTitle: { he: 'איך משחקים', en: 'How to play' },
   how1: {
@@ -64,7 +64,13 @@ const STRINGS = {
   fullscreen: { he: 'מסך מלא', en: 'Full screen' },
   close: { he: 'סגור', en: 'Close' },
   round: (n) => ({ he: `סיבוב ${n}`, en: `Round ${n}` }),
-  target: (n) => ({ he: `עד ${n} נקודות, בהפרש 2`, en: `First to ${n}, win by 2` }),
+  target: (n, by2) => ({
+    he: `עד ${n} נקודות${by2 ? ', בהפרש 2' : ''}`,
+    en: `First to ${n}${by2 ? ', win by 2' : ''}`,
+  }),
+  custom: { he: 'אחר', en: 'Other' },
+  customTarget: { he: 'נקודות לניצחון', en: 'Points to win' },
+  winBy2: { he: 'ניצחון בהפרש 2', en: 'Win by 2' },
   pause: { he: 'השהה', en: 'Pause' },
   resume: { he: 'המשך', en: 'Resume' },
   menu: { he: 'תפריט', en: 'Menu' },

@@ -3,7 +3,19 @@
 // tested with plain arrays standing in for connections.
 
 import { randomUUID } from 'node:crypto';
-import { ARENA, DT, LENGTHS, PALETTE, BOT_LEVELS, MAX_PLAYERS, makeRng } from '../shared/config.js';
+import {
+  ARENA,
+  DT,
+  LENGTH_CHOICES,
+  DEFAULT_CUSTOM_TARGET,
+  PALETTE,
+  BOT_LEVELS,
+  MAX_PLAYERS,
+  clampTarget,
+  leadFor,
+  makeRng,
+  matchTarget,
+} from '../shared/config.js';
 import { encodeEvent, encodeSnapshot, round1 } from '../shared/protocol.js';
 import { Round } from '../shared/sim/round.js';
 import { Match } from '../shared/sim/match.js';
@@ -12,7 +24,8 @@ const COUNTDOWN = 2.4;
 const ROUND_PAUSE = 3;
 const MAX_STEPS_PER_TICK = 8;
 const SETTINGS = {
-  length: Object.keys(LENGTHS),
+  length: LENGTH_CHOICES,
+  winBy2: ['on', 'off'],
   powerups: ['on', 'off'],
   botLevel: Object.keys(BOT_LEVELS),
   locked: ['off', 'on'], // a locked room takes no new players
@@ -47,7 +60,14 @@ export class Room {
     this.members = [];
     this.nextId = 1;
     this.hostId = 0;
-    this.settings = { length: 'normal', powerups: 'on', botLevel: 'medium', locked: 'off' };
+    this.settings = {
+      length: 'normal',
+      target: DEFAULT_CUSTOM_TARGET, // used when length is 'custom'
+      winBy2: 'on',
+      powerups: 'on',
+      botLevel: 'medium',
+      locked: 'off',
+    };
     this.state = 'lobby'; // 'lobby' | 'match'
     this.phase = null; // 'countdown' | 'playing' | 'roundEnd'
     this.emptyFor = 0;
@@ -204,15 +224,18 @@ export class Room {
         m.color = msg.color;
         break;
       case 'set':
-        if (
-          !host ||
-          !lobby ||
-          !Object.hasOwn(SETTINGS, msg.key) ||
-          !SETTINGS[msg.key].includes(msg.val) ||
-          (msg.key === 'locked' && this.public)
-        )
-          return;
-        this.settings[msg.key] = msg.val;
+        if (!host || !lobby) return;
+        if (msg.key === 'target') {
+          // The one number a host can type: any number is accepted, then clamped.
+          if (!Number.isFinite(msg.val)) return;
+          this.settings.target = clampTarget(msg.val);
+        } else if (
+          Object.hasOwn(SETTINGS, msg.key) &&
+          SETTINGS[msg.key].includes(msg.val) &&
+          !(msg.key === 'locked' && this.public)
+        ) {
+          this.settings[msg.key] = msg.val;
+        } else return;
         break;
       case 'addBot':
         if (!host || !lobby) return;
@@ -254,7 +277,9 @@ export class Room {
       bot: m.bot,
       m,
     }));
-    this.match = new Match(this.order.length, LENGTHS[this.settings.length]);
+    const { length, target, winBy2 } = this.settings;
+    const n = this.order.length;
+    this.match = new Match(n, matchTarget(length, n, target), leadFor(winBy2));
     this.state = 'match';
     this.autoStart = null;
     this.broadcast(this.info());
@@ -314,6 +339,7 @@ export class Room {
       colors: this.order.map((e) => e.color),
       scores: this.match.scores,
       target: this.match.target,
+      lead: this.match.lead,
       roundNo: this.match.roundNo + 1,
       segs: withLog ? this.segLog : [],
     };

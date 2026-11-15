@@ -2,7 +2,7 @@
 // online room connection, and passes saved settings on to the engine.
 
 import { useEffect, useMemo, useState } from 'react';
-import { PALETTE } from '../shared/config.js';
+import { PALETTE, leadFor, matchTarget } from '../shared/config.js';
 import { game, haptics, sfx } from './engine/index.js';
 import { useBackLayer } from './hooks/useBackLayer.js';
 import { useGameUi } from './hooks/useGameUi.js';
@@ -48,18 +48,18 @@ export function App() {
   }, [settings.sound, settings.volume, settings.shake]);
 
   const startLocal = () => {
+    const players = settings.players.filter((p) => p.mode !== 'off');
     game.startLocal({
-      players: settings.players
-        .filter((p) => p.mode !== 'off')
-        .map((p) => ({
-          name: p.name.trim() || colorName(p.color),
-          color: PALETTE[p.color].hex,
-          human: p.mode === 'human',
-          keys: p.keys,
-        })),
+      players: players.map((p) => ({
+        name: p.name.trim() || colorName(p.color),
+        color: PALETTE[p.color].hex,
+        human: p.mode === 'human',
+        keys: p.keys,
+      })),
       botLevel: settings.botLevel,
       powerups: settings.powerups === 'on',
-      length: settings.length,
+      target: matchTarget(settings.length, players.length, settings.target),
+      lead: leadFor(settings.winBy2),
     });
   };
 

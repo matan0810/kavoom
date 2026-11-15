@@ -252,7 +252,11 @@ saved copy. A page is saved only if it really is the game (it has the app's root
 script), so the host's waking-up page never replaces it. Local play therefore works offline. Fonts come from Google and fall back to the
 system font offline. Online play is never cached.
 
-The free server sleeps after 15 idle minutes. The page pings `/healthz` when it opens, and
+The free server sleeps after 15 idle minutes. A first visit to a sleeping server shows
+Render's own "application loading" page for about a minute; Render serves it before our code
+runs, so it cannot be changed. This is accepted on purpose: the fixes (a paid plan, moving the
+page to a static site at a new address, or pinging the server awake) cost money, need manual
+steps or work around the free plan. Returning visitors are not affected: they get the saved copy. The page pings `/healthz` when it opens, and
 connecting to a room retries for 90 seconds with a "waking up" message.
 
 ## 10. Online

@@ -7,6 +7,8 @@ breaking changes are major.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-15
+
 ### Added
 - Online rooms have an Invite friends button: on phones it opens the share sheet (WhatsApp, Messages and so on), elsewhere it copies the link.
 - Quick game: one tap puts you in a public room with whoever else is looking for a game. It starts by itself ten seconds after a second player arrives, and you can add bots and start sooner.

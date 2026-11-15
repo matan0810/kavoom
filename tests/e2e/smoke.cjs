@@ -56,7 +56,7 @@ async function main() {
   step('phone menu: fits the width, big buttons');
 
   await phone.click('.start-bar .btn');
-  await settle(phone, 4500);
+  await phone.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
   const box = await phone.evaluate(() => {
     const c = document.querySelector('canvas.arena').getBoundingClientRect();
     return { w: c.width, h: c.height, vh: innerHeight, vw: innerWidth };
@@ -145,7 +145,7 @@ async function main() {
   await offline.reload();
   await offline.waitForSelector('.menu');
   await offline.click('.start-bar .btn');
-  await settle(offline, 3500);
+  await offline.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
   assert.equal(await offline.evaluate(() => window.__kavoom.game.ui.state), 'playing');
   await offline.goBack();
   await settle(offline);
@@ -166,7 +166,7 @@ async function main() {
     await d.goto(url);
     await settle(d, 500);
     await d.click('.start-bar .btn');
-    await settle(d, 4200);
+    await d.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
     assert.equal(
       await d.$$eval('.side-actions .btn', (n) => n.length),
       3,
@@ -262,8 +262,9 @@ async function main() {
 
   await host.click('.room-actions .btn.primary');
   await guest.waitForSelector('.game');
-  await settle(guest, 3500);
-  assert.equal(await guest.evaluate(() => window.__kavoom.game.ui.state), 'playing');
+  // Wait for "playing" rather than sleeping a fixed time: nobody steers here, so the
+  // two lines can crash into each other soon after the start and end the round.
+  await guest.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
   assert.equal(await guest.evaluate(() => window.__kavoom.game.myIndex), 1);
   assert.ok(
     await guest.evaluate(() => window.__kavoom.game.view.players.length === 2),

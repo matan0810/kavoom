@@ -1,6 +1,6 @@
 {
   "name": "kavoom",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "description": "KAVOOM: a line game for the browser, local and online",

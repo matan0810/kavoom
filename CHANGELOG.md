@@ -7,6 +7,8 @@ breaking changes are major.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-15
+
 ### Added
 - Match length shows the actual points for the players in the game (for example Normal · 20 with three players), and Other lets you type your own number of points to win.
 - Win by 2 can be turned off: then the first player to reach the target wins (players level at the top still play on).

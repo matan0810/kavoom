@@ -243,7 +243,8 @@ Touch:
 `public/sw.js` is a service worker that saves the page and its files on the device. The page
 is taken from the network when it answers within 2.5 seconds (so a release shows on the next
 visit) and from the saved copy otherwise; hashed files in `assets/` always come from the
-saved copy. Local play therefore works offline. Fonts come from Google and fall back to the
+saved copy. A page is saved only if it really is the game (it has the app's root element and
+script), so the host's waking-up page never replaces it. Local play therefore works offline. Fonts come from Google and fall back to the
 system font offline. Online play is never cached.
 
 The free server sleeps after 15 idle minutes. The page pings `/healthz` when it opens, and
@@ -297,6 +298,8 @@ Nobody can cheat from the browser, and everyone sees the same game.
   knockout and match-end messages.
 - Back button (`tests/backbutton.test.js`): against a fake browser history: one entry per
   layer, Back closes the top layer, no double Back, sticky game layer, Forward undone.
+- Service worker (`tests/sw.test.js`): in a sandbox with a fake network and cache: what is
+  saved, the waking-up page never replacing the game, releases, no network.
 - Prediction (`tests/prediction.test.js`): the head moves exactly as in the round, and with
   a simulated 120 ms connection the predicted head stays within a line's width of the truth.
 - Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode.

@@ -7,6 +7,9 @@
 // - Files in /assets/ have a hash of their content in the name and never
 //   change, so the saved copy is always right.
 // - Online play (/ws) and anything on another site are left alone.
+// - While the free server is asleep, the host answers with its own "waking up"
+//   page. That page is never saved over the game: only a page that really is
+//   the game (it has the app's root element and its script) replaces the copy.
 
 const CACHE = 'kavoom-v1';
 const PAGE = '/';
@@ -24,10 +27,14 @@ function assetsOf(html) {
   return [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]);
 }
 
+function isGamePage(html) {
+  return html.includes('<div id="root">') && assetsOf(html).length > 0;
+}
+
 // Save a fresh page with everything it needs, and drop assets no page uses any more.
-async function savePage(response) {
+async function savePage(response, html) {
   const cache = await caches.open(CACHE);
-  const assets = assetsOf(await response.clone().text());
+  const assets = assetsOf(html);
   await cache.addAll([...EXTRAS, ...assets]);
   await cache.put(PAGE, response);
   for (const request of await cache.keys()) {
@@ -36,18 +43,26 @@ async function savePage(response) {
   }
 }
 
-async function fetchAndSavePage() {
-  const response = await fetch(PAGE, { cache: 'no-store' });
-  if (!response.ok) throw new Error(`page answered ${response.status}`);
-  await savePage(response.clone());
-  return response;
+// The network's answer for the page, and a promise that settles once it has
+// been checked and, if it is the game, saved. The check fails for anything
+// else, such as the host's waking-up page.
+function fetchPage() {
+  const network = fetch(PAGE, { cache: 'no-store' });
+  const saved = network.then(async (response) => {
+    const html = response.ok ? await response.clone().text() : '';
+    if (!isGamePage(html)) throw new Error('not the game page');
+    await savePage(response.clone(), html);
+    return response;
+  });
+  return { network, saved };
 }
 
-// The network's page if it comes in time, the saved one otherwise.
+// The fresh game page if it comes in time, the saved one otherwise. With no
+// saved copy yet, whatever the network sent is shown, waking-up page included.
 async function page() {
-  const fresh = fetchAndSavePage();
+  const { network, saved: fresh } = fetchPage();
   const saved = await caches.match(PAGE);
-  if (!saved) return fresh;
+  if (!saved) return fresh.catch(() => network);
   fresh.catch(() => {}); // a failure here just means we stay on the saved page
   const late = new Promise((resolve) => setTimeout(() => resolve(saved), PAGE_WAIT_MS));
   return Promise.race([fresh.catch(() => saved), late]);
@@ -58,7 +73,8 @@ async function savedFirst(request) {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(fetchAndSavePage().then(() => self.skipWaiting()));
+  // If the server is still waking up, installing fails and is tried again on the next visit.
+  event.waitUntil(fetchPage().saved.then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {

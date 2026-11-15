@@ -7,6 +7,9 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Fixed
+- If the server was asleep when the game was opened, its saved copy could be replaced by the host's "application loading" page. Only the real game page is saved now.
+
 ## [1.3.0] - 2026-11-15
 
 ### Added

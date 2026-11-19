@@ -37,7 +37,7 @@ export function App() {
   }, [inGame]);
 
   // Back in a room's lobby leaves the room, like the Leave button.
-  useBackLayer(!!online.room, () => online.leave());
+  useBackLayer(!!online.room, () => online.leave(), { level: 'room' });
 
   // Saved settings that the engine needs to know about.
   useEffect(() => {

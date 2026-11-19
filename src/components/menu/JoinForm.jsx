@@ -14,9 +14,19 @@ export function JoinForm({ online }) {
   return (
     <>
       <h2>{t('tabOnline')}</h2>
+      {online.saved && (
+        <button
+          type="button"
+          className="btn primary big"
+          disabled={online.busy}
+          onClick={online.rejoin}
+        >
+          {t('backToRoomCode', online.saved.code)}
+        </button>
+      )}
       <button
         type="button"
-        className="btn primary big"
+        className={`btn big${online.saved ? '' : ' primary'}`}
         disabled={online.busy}
         onClick={() => online.connect({ t: 'quick' })}
       >

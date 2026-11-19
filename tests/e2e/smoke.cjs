@@ -283,6 +283,14 @@ async function main() {
   );
   step('online: both in the match, snapshots arriving');
 
+  // The guest's page reloads mid-match (a phone that dropped the tab): back in the same seat.
+  await guest.reload();
+  await guest.waitForSelector('.game');
+  await guest.waitForFunction(() => window.__kavoom.game.myIndex === 1);
+  const seats = await host.evaluate(() => window.__kavoom.game.ui.players.length);
+  assert.equal(seats, 2, 'no second player was made');
+  step('online: a reload mid-match returns to the same seat');
+
   await guest.goBack(); // leave dialog
   await settle(guest);
   assert.match(await text(guest, '.card h2'), /לעזוב/);
@@ -307,6 +315,16 @@ async function main() {
   await settle(host, 400);
   await host.click('.btn.primary.big'); // quick game: a public room
   await host.waitForSelector('.room-code');
+  // The host reloads in the lobby: same room, still the host.
+  const lobbyCode = (await text(host, '.room-code')).trim();
+  await host.reload();
+  await host.waitForFunction(
+    (c) => document.querySelector('.room-code')?.textContent.trim() === c,
+    lobbyCode,
+  );
+  assert.equal(await host.$$eval('.member', (n) => n.length), 1, 'still alone, not twice');
+  assert.match(await text(host, '.member .tag'), /Host/);
+  step('online: a reload in the lobby returns to the room, still as host');
   assert.equal(
     await host.$('.setting .seg[aria-label="Room door"]'),
     null,

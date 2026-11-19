@@ -12,6 +12,12 @@ breaking changes are major.
 
 ### Fixed
 - Online: the other players' lines no longer stutter and jump. They now move as smoothly as your own, even when messages from the server arrive unevenly.
+- Online: a player whose connection drops keeps their seat for a minute, in the lobby too, instead of losing it at once.
+- Online: the host keeps the role through a short drop (a locked phone); it passes to someone else only after half a minute away.
+- Online: reloading the page or reopening the game puts you back in your seat in the room, instead of making a second you while the old one stays behind. Joining with the room's code does the same, and the online tab offers Back to room.
+- Online: after a drop the game keeps trying to reconnect for two minutes instead of six seconds, and tries again at once when you return to the page or the network comes back.
+- Online: when nobody is left in a room, the match waits instead of the bots playing on.
+- After a reload in the middle of a match, the Back button opens the game menu again instead of leaving the room.
 
 - Online: all lines are now shown at the same moment. Before, your own line was drawn ahead of the others, so in a close call it looked like you passed first even when the server saw the other player first.
 ## [1.4.0] - 2026-11-15

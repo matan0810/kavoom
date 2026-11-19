@@ -158,3 +158,31 @@ test('entries left over from before a reload are walked back over', async () => 
   await settle();
   assert.equal(browser.index, 0);
 });
+
+test('a layer opened right after a reload waits for the clean-up, then Back works', async () => {
+  // A match is back on screen (a reload mid-game) before the old entries are walked over.
+  const browser = fakeBrowser([null, { kavoomDepth: 1 }, { kavoomDepth: 2 }]);
+  const { addLayer } = await import(`../src/engine/backButton.js?case=${n++}`);
+  let calls = 0;
+  addLayer(() => calls++, true);
+  await settle();
+  await settle();
+  assert.equal(browser.index, 1, 'one entry, for the one layer');
+  assert.equal(browser.length, 2, 'the old entries are gone');
+  browser.back();
+  await settle();
+  assert.equal(calls, 1, 'Back reached the game, not the page before the site');
+  assert.equal(browser.index, 1);
+});
+
+test('layers stack by kind, not by the order they opened in', async () => {
+  const { addLayer, removeLayer, LEVELS, browser } = await load();
+  const log = [];
+  // After a reload the game screen can open a moment before the room does.
+  addLayer(() => log.push('game'), true, LEVELS.game);
+  const room = addLayer(() => (log.push('room'), removeLayer(room)), false, LEVELS.room);
+  await settle();
+  browser.back();
+  await settle();
+  assert.deepEqual(log, ['game'], 'Back reaches the game first, not the room under it');
+});

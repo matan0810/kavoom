@@ -11,6 +11,8 @@ import {
   MAX_PLAYERS,
 } from '../../shared/config.js';
 
+import { loadSession } from './session.js';
+
 const STORE_KEY = 'kavoom.settings.v1';
 
 // A shared link carries the room code in the hash: https://.../#ABCD
@@ -102,7 +104,7 @@ export function loadSettings() {
   } catch {
     /* storage unavailable: defaults are fine */
   }
-  if (LINKED_ROOM) base.tab = 'online';
+  if (LINKED_ROOM || loadSession()) base.tab = 'online'; // going back into a room
   return base;
 }
 

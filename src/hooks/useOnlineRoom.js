@@ -4,8 +4,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SERVER_URL } from '../../shared/config.js';
+import { LINKED_ROOM } from '../state/settings.js';
 import { Net } from '../engine/net.js';
 import { game } from '../engine/index.js';
+import { clearSession, loadSession, saveSession } from '../state/session.js';
+
+// Server answers that end our claim on a seat, so the device forgets it.
+const SEAT_GONE = ['noroom', 'kicked', 'locked', 'full'];
 
 const ERRORS = {
   noroom: 'errNoroom',
@@ -44,6 +49,7 @@ export function useOnlineRoom(identity) {
   const [you, setYou] = useState(0); // this player's id in the room
   const [status, setStatus] = useState(''); // a strings.js key, or ''
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(loadSession); // a seat this device can return to
   const net = useRef(null);
   const youRef = useRef(0);
   const latestIdentity = useRef(identity);
@@ -53,7 +59,15 @@ export function useOnlineRoom(identity) {
     if (net.current) net.current.send(msg);
   }, []);
 
-  const leave = useCallback((why = '') => {
+  // why: a strings.js key for the status line. Leaving on purpose (why = '')
+  // gives up the seat; losing the connection keeps it, to come back to.
+  const leave = useCallback((why = '', forget = why === '') => {
+    if (forget) {
+      clearSession();
+      setSaved(null);
+    } else {
+      setSaved(loadSession());
+    }
     if (net.current) {
       net.current.send({ t: 'leave' });
       net.current.close();
@@ -72,6 +86,7 @@ export function useOnlineRoom(identity) {
         case 'joined':
           youRef.current = m.you;
           setYou(m.you);
+          saveSession(m);
           // The code from a shared link has done its job; a clean address also
           // keeps it out of the history entries the Back button walks through.
           if (location.hash) history.replaceState(history.state, '', location.pathname);
@@ -81,6 +96,7 @@ export function useOnlineRoom(identity) {
           setStatus('');
           break;
         case 'round':
+          if (net.current?.session) saveSession(net.current.session); // still here: keep it fresh
           game.onlineRound(m, youRef.current);
           break;
         case 's':
@@ -94,19 +110,26 @@ export function useOnlineRoom(identity) {
           break;
         case 'error':
           // Refused at the door, or the room is gone: either way we are not in one.
-          leave(Object.hasOwn(ERRORS, m.code) ? ERRORS[m.code] : 'lost');
+          leave(
+            Object.hasOwn(ERRORS, m.code) ? ERRORS[m.code] : 'lost',
+            SEAT_GONE.includes(m.code),
+          );
           break;
       }
     },
     [leave],
   );
 
-  // first: the opening message, { t: 'create' }, { t: 'quick' } or { t: 'join', code }.
+  // first: the opening message, { t: 'create' }, { t: 'quick' }, { t: 'join', code }
+  // or { t: 'rejoin', code, token }. Joining a room this device has a seat in
+  // becomes a rejoin, so it takes back that seat instead of making a second one.
   const connect = useCallback(
     async (first) => {
       if (net.current) return;
+      const seat = loadSession();
+      if (first.t === 'join' && seat && seat.code === first.code) first = { t: 'rejoin', ...seat };
       setBusy(true);
-      setStatus('connecting');
+      setStatus(first.t === 'rejoin' ? 'returning' : 'connecting');
       const mine = new Net(
         serverUrl(),
         {
@@ -134,8 +157,30 @@ export function useOnlineRoom(identity) {
     [leave, onMessage],
   );
 
+  // Opening the game with a seat to return to (a reload, a closed tab, a phone
+  // that dropped the page) goes straight back to it.
+  useEffect(() => {
+    const seat = loadSession();
+    if (seat && (!LINKED_ROOM || LINKED_ROOM === seat.code)) connect({ t: 'rejoin', ...seat });
+    // Only on the first render: later returns are the player's choice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Closing the tab's component tree closes the socket too.
   useEffect(() => () => net.current && net.current.close(), []);
 
-  return { room, you, status, busy, connect, leave, send, isHost: !!room && room.host === you };
+  const rejoin = useCallback(() => saved && connect({ t: 'rejoin', ...saved }), [saved, connect]);
+
+  return {
+    room,
+    you,
+    status,
+    busy,
+    saved,
+    connect,
+    rejoin,
+    leave,
+    send,
+    isHost: !!room && room.host === you,
+  };
 }

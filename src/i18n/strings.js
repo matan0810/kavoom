@@ -106,6 +106,8 @@ const STRINGS = {
     he: `השיא שלך: ${wins} ניצחונות מתוך ${matches} משחקים · רצף שיא ${best}`,
     en: `Your record: ${wins} wins in ${matches} matches · best streak ${best}`,
   }),
+  backToRoomCode: (code) => ({ he: `חזרה לחדר ${code}`, en: `Back to room ${code}` }),
+  returning: { he: 'חוזרים לחדר…', en: 'Going back to your room…' },
   quickGame: { he: 'משחק מהיר', en: 'Quick game' },
   quickGameHint: {
     he: 'מצטרפים למי שמחפש משחק עכשיו.',

@@ -229,7 +229,7 @@ Touch:
 - Phone menu: one column, one row per player, key bindings hidden, controls at least 46px
   tall, and Start pinned to the bottom of the screen.
 - Back button: every dialog, the game screen and an online room own one browser history
-  entry. Back closes the top one: a dialog closes, a room's lobby is left, a finished online
+  entry, stacked in that order whatever order they open in. Back closes the top one: a dialog closes, a room's lobby is left, a finished online
   match returns to the room. During a match Back opens the game menu and the match stays.
   On the bare menu Back leaves the site as usual.
 - Colours: tapping the dot in a player's row opens the picker. On one device a taken
@@ -278,8 +278,20 @@ Nobody can cheat from the browser, and everyone sees the same game.
   (consecutive pieces of one line merged), events (knockout, pickup, clear) and points.
 - Joining mid-round replays every trail segment so far. The newcomer watches until the
   match ends and plays in the next one.
-- A dropped player keeps their seat during a match while a medium bot steers; the client
-  retries six times with a token. In the lobby a drop frees the seat.
+- Seats survive drops. A player whose connection drops is shown as away and keeps the seat
+  for 60 seconds in the lobby, and for the whole match during one (a medium bot steers their
+  line meanwhile). The host keeps the role for 30 seconds away; after that it passes to the
+  person who has been in the room longest, who keeps it when the old host returns.
+- Coming back: the device remembers its seat (room code and token) in `localStorage` for 10
+  minutes. Opening the game with a remembered seat goes straight back to it; the online tab
+  also offers "Back to room", and joining with that room's code takes back the same seat.
+  Leaving on purpose, being removed, or the room being gone forgets it.
+- Reconnecting: after a drop the client retries with growing waits (0.5 s up to 5 s) for two
+  minutes, and at once when the page is shown again or the network returns. On return to the
+  page it also pings the server and reconnects if nothing answers within 3 seconds (a phone
+  can wake up holding a dead connection).
+- A room with no connected person freezes its match, and is closed after 60 seconds, or at
+  once when no person holds a seat at all.
 - Prediction of your own head: a key press takes one round trip to come back from the
   server, so the server's position for your line is always old. The browser measures the
   round trip with a ping every two seconds, takes the newest server position, and replays

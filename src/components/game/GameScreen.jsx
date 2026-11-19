@@ -56,7 +56,10 @@ export function GameScreen({ ui, online }) {
 
   // Back never throws the match away: it opens the game menu. (An open dialog
   // sits above this layer and takes Back first.)
-  useBackLayer(true, () => ui.state !== 'matchEnd' && openMenu(), { sticky: true });
+  useBackLayer(true, () => ui.state !== 'matchEnd' && openMenu(), {
+    sticky: true,
+    level: 'game',
+  });
 
   useEffect(() => {
     const onKey = (e) => {

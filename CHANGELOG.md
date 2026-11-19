@@ -7,6 +7,8 @@ breaking changes are major.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-19
+
 ### Added
 - The host of an online room can rename a bot in the lobby: tap its name and type.
 - While people play online, the server writes one health line a minute to its log in Render (rooms, players, CPU, and whether the game loop ran late), so a stalling server shows up. It holds counts only, nothing about players.

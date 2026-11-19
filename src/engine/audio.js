@@ -3,7 +3,9 @@
 // Browsers (iPhones most strictly) let a page make sound only after the person
 // has touched or pressed something, and only if the audio is switched on during
 // that very touch. unlock() is called on every touch, click and key press for
-// that reason; the first sound itself usually comes a moment later.
+// that reason (see engine/index.js), and only there: switching audio on at any
+// other moment is refused and makes the browser complain. Until the first touch
+// the game is silent, which matters for a page that opens straight into a match.
 
 export class Sfx {
   constructor() {
@@ -24,8 +26,7 @@ export class Sfx {
 
   tone(freq, dur, { type = 'square', vol = 0.06, to = freq, delay = 0 } = {}) {
     if (!this.enabled || this.volume <= 0) return;
-    this.unlock();
-    if (!this.ctx || this.ctx.state !== 'running') return; // not allowed to play yet
+    if (!this.ctx || this.ctx.state !== 'running') return; // not switched on by a touch yet
     try {
       const t = this.ctx.currentTime + delay;
       const osc = this.ctx.createOscillator();

@@ -241,6 +241,12 @@ export class Room {
         if (!host || !lobby) return;
         this.addBot();
         break;
+      case 'renameBot': {
+        const bot = this.members.find((x) => x.id === msg.id && x.bot);
+        if (!host || !lobby || !bot) return;
+        bot.name = cleanName(msg.name);
+        break;
+      }
       case 'removeBot': {
         const bot = this.members.find((x) => x.id === msg.id && x.bot);
         if (!host || !lobby || !bot) return;

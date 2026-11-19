@@ -303,3 +303,19 @@ test('nothing about the target changes once the match is on', () => {
   room.handle(ma.id, { t: 'set', key: 'target', val: 3 });
   assert.equal(room.settings.target, 20);
 });
+
+test('the host can rename a bot in the lobby, and nobody can rename a person this way', () => {
+  const { room, a, ma, mb } = setup();
+  room.handle(ma.id, { t: 'addBot' });
+  const bot = room.members.find((m) => m.bot);
+  room.handle(mb.id, { t: 'renameBot', id: bot.id, name: 'Guest try' });
+  assert.equal(bot.name, 'BOT 1', 'a guest cannot');
+  room.handle(ma.id, { t: 'renameBot', id: bot.id, name: '  <Robo>\u202E  ' });
+  assert.equal(bot.name, 'Robo', 'cleaned like any name');
+  assert.equal(a.last('room').members.find((m) => m.id === bot.id).name, 'Robo');
+  room.handle(ma.id, { t: 'renameBot', id: mb.id, name: 'Hacked' });
+  assert.notEqual(room.members.find((m) => m.id === mb.id).name, 'Hacked');
+  room.handle(ma.id, { t: 'start' });
+  room.handle(ma.id, { t: 'renameBot', id: bot.id, name: 'Late' });
+  assert.equal(bot.name, 'Robo', 'not during a match');
+});

@@ -282,6 +282,21 @@ button.dot:hover {
   white-space: nowrap;
   font-weight: 700;
 }
+/* A bot's name the host can edit: looks like the other names until touched. */
+.member .name-field {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed var(--line);
+  border-radius: 0;
+  padding: 2px 0;
+}
+.member .name-field:focus {
+  border-bottom: 1px solid var(--all);
+  outline: none;
+}
 .tag {
   color: var(--muted);
   font-size: 0.8125rem;

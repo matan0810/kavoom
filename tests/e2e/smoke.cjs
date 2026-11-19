@@ -236,6 +236,17 @@ async function main() {
   assert.ok(shared.text.includes(code));
   step('online: the invite button shares a link with the room code');
 
+  // The host adds a bot and names it; the guest sees the new name.
+  await host.click('.room-actions .btn:nth-child(2)'); // add bot
+  await host.fill('.member input.who', 'Robo');
+  await host.press('.member input.who', 'Enter');
+  await guest.waitForFunction(() =>
+    [...document.querySelectorAll('.member .who')].some((n) => n.textContent === 'Robo'),
+  );
+  await host.click('.member:last-child .btn.small'); // and removes it again
+  await guest.waitForFunction(() => document.querySelectorAll('.member').length === 2);
+  step('online: the host can name a bot');
+
   // The host locks the door: a third player is turned away. Then removes and re-admits the guest.
   await host.click('.seg[aria-label="Room door"] button:nth-child(2)');
   const third = await open({ viewport: { width: 900, height: 700 }, locale: 'en-US' }, 'third');

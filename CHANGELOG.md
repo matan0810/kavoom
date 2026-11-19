@@ -7,6 +7,9 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Added
+- The host of an online room can rename a bot in the lobby: tap its name and type.
+
 ### Fixed
 - Online: the other players' lines no longer stutter and jump. They now move as smoothly as your own, even when messages from the server arrive unevenly.
 

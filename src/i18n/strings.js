@@ -133,6 +133,7 @@ const STRINGS = {
   copyLink: { he: 'העתק קישור', en: 'Copy link' },
   copied: { he: 'הועתק', en: 'Copied' },
   host: { he: 'מארח', en: 'Host' },
+  botName: { he: 'שם הבוט', en: 'Bot name' },
   addBot: { he: 'הוסף בוט', en: 'Add bot' },
   remove: { he: 'הסר', en: 'Remove' },
   away: { he: 'מנותק', en: 'Away' },

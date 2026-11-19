@@ -7,6 +7,10 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Fixed
+- Online: the other players' lines no longer stutter and jump. They now move as smoothly as your own, even when messages from the server arrive unevenly.
+
+- Online: all lines are now shown at the same moment. Before, your own line was drawn ahead of the others, so in a close call it looked like you passed first even when the server saw the other player first.
 ## [1.4.0] - 2026-11-15
 
 ### Added

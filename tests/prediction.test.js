@@ -8,6 +8,12 @@ import { Predictor } from '../src/engine/prediction.js';
 const noFx = Object.fromEntries(FX_KEYS.map((k) => [k, 0]));
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
+// One snapshot holding only our own head (player 0).
+function addServerState(predictor, head, fx, openWalls, playing, now, serverMs) {
+  const me = { id: 0, ...head, alive: true, fx };
+  predictor.addSnapshot([me], 0, openWalls, playing, now, serverMs);
+}
+
 function soloRound() {
   const round = new Round({
     w: ARENA.w,
@@ -46,11 +52,11 @@ test('open walls bring the head back on the other side', () => {
 
 test('nothing is predicted before the round trip is known or during the countdown', () => {
   const p = new Predictor();
-  p.addServerState({ x: 1, y: 1, angle: 0 }, noFx, 0, true, 1000, 1000);
+  addServerState(p, { x: 1, y: 1, angle: 0 }, noFx, 0, true, 1000, 1000);
   assert.equal(p.predict(1010), null, 'round trip not measured');
   p.addRttSample(100);
   p.reset();
-  p.addServerState({ x: 1, y: 1, angle: 0 }, noFx, 0, false, 1000, 1000);
+  addServerState(p, { x: 1, y: 1, angle: 0 }, noFx, 0, false, 1000, 1000);
   assert.equal(p.predict(1010), null, 'countdown');
   assert.equal(new Predictor().predict(5), null);
 });
@@ -58,8 +64,8 @@ test('nothing is predicted before the round trip is known or during the countdow
 test('going straight, the head is drawn one round trip (plus the age of the news) ahead', () => {
   const p = new Predictor();
   p.addRttSample(100);
-  p.addServerState({ x: 500, y: 300, angle: 0 }, noFx, 0, true, 0, 0);
-  p.addServerState({ x: 600, y: 300, angle: 0 }, noFx, 0, true, 1000, 1000);
+  addServerState(p, { x: 500, y: 300, angle: 0 }, noFx, 0, true, 0, 0);
+  addServerState(p, { x: 600, y: 300, angle: 0 }, noFx, 0, true, 1000, 1000);
   const guess = p.predict(1010);
   const lead = (100 + 1000 / 120 + 10) / 1000;
   assert.ok(Math.abs(guess.x - (600 + BASE.speed * lead)) < 0.01);
@@ -71,13 +77,13 @@ test('going straight, the head is drawn one round trip (plus the age of the news
 test('the lead eases in at the start of a round and is capped on a terrible connection', () => {
   const p = new Predictor();
   p.addRttSample(100);
-  p.addServerState({ x: 500, y: 300, angle: 0 }, noFx, 0, true, 1000, 1000);
+  addServerState(p, { x: 500, y: 300, angle: 0 }, noFx, 0, true, 1000, 1000);
   assert.equal(p.predict(1000).x, 500, 'no jump at "go"');
 
   const slow = new Predictor();
   slow.addRttSample(1500);
-  slow.addServerState({ x: 500, y: 300, angle: 0 }, noFx, 0, true, 0, 0);
-  slow.addServerState({ x: 500, y: 300, angle: 0 }, noFx, 0, true, 5000, 5000);
+  addServerState(slow, { x: 500, y: 300, angle: 0 }, noFx, 0, true, 0, 0);
+  addServerState(slow, { x: 500, y: 300, angle: 0 }, noFx, 0, true, 5000, 5000);
   assert.ok(Math.abs(slow.predict(5000).x - (500 + BASE.speed * 0.25)) < 0.01);
   // The server went quiet: the guess stops growing instead of running off.
   assert.ok(slow.predict(9000).x - 500 < BASE.speed * 0.45);
@@ -127,7 +133,7 @@ test('with 120 ms of round trip, the predicted head matches where the server end
     // Client: take what arrived, press keys, and predict.
     while (toClient.length && toClient[0].at <= ms) {
       const snap = toClient.shift();
-      predictor.addServerState(snap.head, noFx, 0, true, ms, snap.serverMs);
+      addServerState(predictor, snap.head, noFx, 0, true, ms, snap.serverMs);
     }
     if (keys(ms) !== held) {
       held = keys(ms);
@@ -147,7 +153,7 @@ test('with 120 ms of round trip, the predicted head matches where the server end
     if (guess && ms > 400 && ms < 2500 && truth.has(ms - 1)) {
       // What we draw now should be where the server has the head when our input lands.
       const landed = ms + ONE_WAY;
-      pending.push({ landed, guess, shown: predictor.base.head });
+      pending.push({ landed, guess, shown: predictor.heads.get(0).head });
     }
     for (const check of pending.filter((c) => c.landed === ms)) {
       worst = Math.max(worst, dist(check.guess, truth.get(ms)));
@@ -170,3 +176,85 @@ test('with 120 ms of round trip, the predicted head matches where the server end
   );
 });
 const pending = [];
+
+const other = (id, x, y, angle, extra = {}) => ({
+  id,
+  x,
+  y,
+  angle,
+  alive: true,
+  fx: noFx,
+  ...extra,
+});
+
+test("another player's head keeps turning the way its last two positions show", () => {
+  const p = new Predictor();
+  p.addRttSample(100);
+  const { turn } = speedAndTurn(noFx);
+  // Between two snapshots 50 ms apart, player 1 turned exactly as a held key turns it.
+  // The round began a while ago, so the lead has eased in fully.
+  p.addSnapshot([other(1, 400, 300, 0)], 0, 0, true, 0, 0);
+  p.addSnapshot([other(1, 500, 300, 0)], 0, 0, true, 1000, 1000);
+  p.addSnapshot([other(1, 505, 300, turn * 0.05)], 0, 0, true, 1050, 1050);
+  const guess = p.predictAll(1060).find((h) => h.id === 1);
+  const expected = { x: 505, y: 300, angle: turn * 0.05 };
+  const total = (100 + 1000 / 120 + 10) / 1000;
+  for (let t = 0; t < total; t += DT)
+    moveHead(expected, 1, noFx, Math.min(DT, total - t), ARENA, false);
+  assert.ok(dist(guess, expected) < 1e-6 && Math.abs(guess.angle - expected.angle) < 1e-9);
+});
+
+test('a player going straight stays straight, and a small wobble is not a turn', () => {
+  const p = new Predictor();
+  p.addRttSample(100);
+  p.addSnapshot([other(1, 500, 300, 0)], 0, 0, true, 0, 0);
+  p.addSnapshot([other(1, 505, 300, 0.01)], 0, 0, true, 50, 50); // less than half a full turn
+  const guess = p.predictAll(60).find((h) => h.id === 1);
+  assert.equal(guess.angle, 0.01);
+});
+
+test('every head is moved on by the same time, so they show the same moment', () => {
+  const p = new Predictor();
+  p.addRttSample(80);
+  p.addSnapshot([other(0, 100, 100, 0), other(1, 300, 300, Math.PI / 2)], 0, 0, true, 0, 0);
+  p.addSnapshot([other(0, 110, 100, 0), other(1, 300, 310, Math.PI / 2)], 0, 0, true, 100, 100);
+  const [mine, theirs] = p.predictAll(110);
+  assert.ok(
+    Math.abs(mine.x - 110 - (theirs.y - 310)) < 1e-9,
+    'the same distance along their headings',
+  );
+  assert.equal(p.predict(110).id, 0);
+});
+
+test('a player knocked out is no longer predicted, and a watcher sees everyone moved on', () => {
+  const p = new Predictor();
+  p.addRttSample(80);
+  p.addSnapshot([other(0, 100, 100, 0), other(1, 300, 300, 0)], -1, 0, true, 0, 0);
+  assert.deepEqual(
+    p.predictAll(10).map((h) => h.id),
+    [0, 1],
+  );
+  assert.equal(p.predict(10), null, 'a watcher has no head of their own');
+  p.addSnapshot(
+    [other(0, 110, 100, 0), other(1, 300, 300, 0, { alive: false })],
+    -1,
+    0,
+    true,
+    100,
+    100,
+  );
+  assert.deepEqual(
+    p.predictAll(110).map((h) => h.id),
+    [0],
+  );
+});
+
+test('with reversed keys, the guess still turns the way the line was turning', () => {
+  const p = new Predictor();
+  p.addRttSample(100);
+  const fx = { ...noFx, reverse: 3 };
+  const { turn } = speedAndTurn(fx);
+  p.addSnapshot([other(1, 500, 300, 0, { fx })], 0, 0, true, 0, 0);
+  p.addSnapshot([other(1, 505, 300, turn * 0.05, { fx })], 0, 0, true, 50, 50);
+  assert.ok(p.predictAll(60)[0].angle > turn * 0.05, 'still turning the same way');
+});

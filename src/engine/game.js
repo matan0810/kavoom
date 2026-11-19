@@ -28,9 +28,9 @@ export class Game {
   // now: the clock, in ms. Tests pass their own.
   constructor({ input, sfx, haptics = null, now = () => performance.now() }) {
     this.now = now;
-    this.predictor = new Predictor(); // online: our own head, drawn ahead of the server
+    this.predictor = new Predictor(); // online: heads drawn ahead of the server, see prediction.js
     this.lastPing = -Infinity;
-    this.mySegmentAge = 0; // snapshots since the server last drew trail for us
+    this.trailAge = new Map(); // player id -> snapshots since the server last drew trail for them
     this.input = input;
     this.sfx = sfx;
     this.haptics = haptics;
@@ -237,7 +237,7 @@ export class Game {
     this.myIndex = m.order.indexOf(you);
     this.lastDir = 0;
     this.predictor.reset();
-    this.mySegmentAge = 0;
+    this.trailAge.clear();
     this.hud = {
       names: m.names,
       colors: m.colors.map((c) => PALETTE[c].hex),
@@ -270,12 +270,18 @@ export class Game {
     view.wrap = snap.wrap;
     this.hud.live = snap.points;
 
-    const me = snap.players[this.myIndex];
-    if (me) {
-      const serverMs = snap.step * DT * 1000;
-      this.predictor.addServerState(me, me.fx, snap.wrap, !snap.countingDown, this.now(), serverMs);
-      const drewMe = snap.segments.some(([player]) => player.id === this.myIndex);
-      this.mySegmentAge = drewMe ? 0 : this.mySegmentAge + 1;
+    const serverMs = snap.step * DT * 1000;
+    this.predictor.addSnapshot(
+      snap.players,
+      this.myIndex,
+      snap.wrap,
+      !snap.countingDown,
+      this.now(),
+      serverMs,
+    );
+    const drew = new Set(snap.segments.map(([player]) => player.id));
+    for (const p of snap.players) {
+      this.trailAge.set(p.id, drew.has(p.id) ? 0 : (this.trailAge.get(p.id) ?? 0) + 1);
     }
 
     for (const seg of snap.segments) draw.segment(...seg);
@@ -342,15 +348,22 @@ export class Game {
     this.predictor.addRttSample(this.now() - m.c);
   }
 
-  // Our own head drawn where it will be once our input reaches the server, or
-  // null to draw it where the server last saw it. See prediction.js.
+  // Every living head drawn at the same moment: ours where it will be once our
+  // input reaches the server, the others moved on by the same time. Empty to
+  // draw them where the server last saw them. See prediction.js.
+  predictedHeads() {
+    if (this.mode !== 'online' || this.state !== 'playing' || !this.view) return [];
+    return this.predictor.predictAll(this.now()).flatMap((guess) => {
+      const p = this.view.players[guess.id];
+      if (!p || !p.alive) return [];
+      // No trail lately means a gap or the ghost effect: then the way there stays empty too.
+      return [{ ...guess, r: p.r, trail: this.trailAge.get(guess.id) <= 1 }];
+    });
+  }
+
+  // Our own predicted head only, or null.
   predictedHead() {
-    const me = this.view && this.view.players[this.myIndex];
-    if (this.mode !== 'online' || this.state !== 'playing' || !me || !me.alive) return null;
-    const guess = this.predictor.predict(this.now());
-    if (!guess) return null;
-    // No trail lately means a gap or the ghost effect: then the way there stays empty too.
-    return { ...guess, id: this.myIndex, r: me.r, trail: this.mySegmentAge <= 1 };
+    return this.predictedHeads().find((h) => h.id === this.myIndex) || null;
   }
 
   // ---------- Shared ----------
@@ -406,7 +419,7 @@ export class Game {
       dt: this.paused ? 0 : dt,
       intro: this.state === 'countdown',
       names: this.hud.names,
-      predicted: this.predictedHead(),
+      predicted: this.predictedHeads(),
     });
   }
 }

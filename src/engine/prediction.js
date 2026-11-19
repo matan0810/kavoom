@@ -1,4 +1,4 @@
-// Client-side prediction for this player's own head in an online match.
+// Client-side prediction for the heads in an online match.
 //
 // The problem: the server runs the game. A key press travels to the server,
 // the server turns the line, and the picture travels back. Without help, the
@@ -8,14 +8,23 @@
 // include our most recent key presses. So we take it and replay our own recent
 // input on top, for exactly one round trip plus the time since it arrived. The
 // result is where the server will have the head once our input lands, and that
-// is what we draw. Everything else (other players, trails, knockouts) is still
-// drawn as the server says: the server stays the only referee.
+// is what we draw.
+//
+// The other players' heads are moved forward by the same amount of time, so
+// every head on the screen shows the same moment. Without that, our own head
+// would be a round trip ahead of everyone else's, and in a close call we would
+// see ourselves pass first while the server, rightly, saw the other player
+// first. We do not know what the others are pressing, so each keeps turning
+// the way its last two server positions show; when they change their mind, the
+// next message corrects it. Moving every head on our own clock also keeps the
+// picture smooth when messages arrive in bursts. Trails and knockouts are still
+// exactly what the server says: the server stays the only referee.
 //
 // No DOM and no clock in here: every method is given the time, so tests can
 // run it with a made-up clock.
 
 import { ARENA, DT } from '../../shared/config.js';
-import { moveHead } from '../../shared/sim/motion.js';
+import { moveHead, speedAndTurn } from '../../shared/sim/motion.js';
 
 const MAX_LEAD_MS = 250; // beyond this the guess is too far ahead to trust
 const MAX_STALE_MS = 150; // a server position older than this is not extrapolated further
@@ -32,7 +41,8 @@ export class Predictor {
   // A new round: forget the last one's input and positions, keep the measured round trip.
   reset() {
     this.inputs = [{ at: -Infinity, dir: 0 }]; // our key presses, oldest first
-    this.base = null; // newest server state of our head: { head, fx, openWalls, at }
+    this.me = -1; // our player, or -1 when only watching
+    this.heads = new Map(); // player id -> newest server state, see addHead
     this.playingSince = null; // when the first "playing" state of this round arrived
     this.clockGaps = []; // recent (arrival time - server time) values; see serverTimeToLocal
   }
@@ -51,22 +61,44 @@ export class Predictor {
   }
 
   // Messages do not arrive evenly: one comes a little late, the next a little
-  // early. Timing the head by arrival would make it stutter. The server stamps
-  // each position with its own clock instead, and the quickest recent delivery
-  // tells us how that clock lines up with ours.
+  // early. Timing the heads by arrival would make them stutter. The server
+  // stamps each snapshot with its own clock instead, and the quickest recent
+  // delivery tells us how that clock lines up with ours.
   serverTimeToLocal(serverMs, now) {
     this.clockGaps.push(now - serverMs);
     if (this.clockGaps.length > CLOCK_SAMPLES) this.clockGaps.shift();
     return serverMs + Math.min(...this.clockGaps);
   }
 
-  // The server's newest word on our head. playing is false during the countdown.
-  // serverMs is the server's clock for this position (simulation time in ms).
-  addServerState(head, fx, openWalls, playing, now, serverMs) {
-    const at = playing ? this.serverTimeToLocal(serverMs, now) : now;
-    this.base = { head: { x: head.x, y: head.y, angle: head.angle }, fx, openWalls, at };
+  // A snapshot arrived. players: everyone's state as decoded from it ({ id, x,
+  // y, angle, alive, fx }). me: our player's id, or -1. openWalls: seconds of
+  // open walls left. playing: false during the countdown. serverMs: the
+  // server's clock for this snapshot (simulation time in ms).
+  addSnapshot(players, me, openWalls, playing, now, serverMs) {
+    this.me = me;
     if (!playing) this.playingSince = null;
     else if (this.playingSince === null) this.playingSince = now;
+    const at = playing ? this.serverTimeToLocal(serverMs, now) : now;
+    for (const p of players) {
+      if (p.alive) this.addHead(p, openWalls, at, serverMs);
+      else this.heads.delete(p.id);
+    }
+  }
+
+  // For other players, which way they are turning is read from how their angle
+  // changed since their last state: exactly as much as a full turn would, or not.
+  addHead(p, openWalls, at, serverMs) {
+    const before = this.heads.get(p.id);
+    let input = before ? before.input : 0;
+    if (before && serverMs > before.serverMs) {
+      let turned = p.angle - before.head.angle;
+      turned = Math.atan2(Math.sin(turned), Math.cos(turned)); // the short way round
+      const full = speedAndTurn(p.fx).turn * ((serverMs - before.serverMs) / 1000);
+      const way = Math.abs(turned) < full / 2 ? 0 : Math.sign(turned);
+      input = p.fx.reverse > 0 ? -way : way; // moveHead flips reversed keys back
+    }
+    const head = { x: p.x, y: p.y, angle: p.angle };
+    this.heads.set(p.id, { head, fx: p.fx, openWalls, input, at, serverMs });
   }
 
   inputAt(time) {
@@ -78,25 +110,33 @@ export class Predictor {
     return dir;
   }
 
-  // Where to draw our head now: { x, y, angle, path }, or null when there is
-  // nothing to predict (no measurement yet, countdown, no server state).
-  // path is the way from the server's position to the predicted one.
-  predict(now) {
-    const { base } = this;
-    if (!base || this.playingSince === null || !this.rtt) return null;
-    // Ease in over the first moments of a round, so the head does not jump at "go".
+  // Where to draw each living head now: [{ id, x, y, angle, path }], or [] when
+  // there is nothing to predict (no measurement yet, countdown). path is the
+  // way from the server's position to the predicted one.
+  predictAll(now) {
+    if (this.playingSince === null || !this.rtt) return [];
+    // Ease in over the first moments of a round, so heads do not jump at "go".
     const lead = Math.min(this.rtt + TICK_WAIT_MS, MAX_LEAD_MS, now - this.playingSince);
-    const age = Math.min(now - base.at, MAX_STALE_MS);
-    const from = base.at - lead; // our input from this moment on is not in the server state yet
-    const total = (lead + age) / 1000;
+    return [...this.heads].map(([id, state]) => this.advance(id, state, lead, now));
+  }
 
-    const head = { ...base.head };
+  // Our own head only, or null. See predictAll.
+  predict(now) {
+    return this.predictAll(now).find((h) => h.id === this.me) || null;
+  }
+
+  advance(id, { head: start, fx, openWalls, input, at }, lead, now) {
+    const age = Math.min(now - at, MAX_STALE_MS);
+    const from = at - lead; // our own input from this moment on is not in the server state yet
+    const total = (lead + age) / 1000;
+    const head = { ...start };
     const path = [[head.x, head.y]];
     for (let t = 0; t < total; t += DT) {
       const dt = Math.min(DT, total - t);
-      moveHead(head, this.inputAt(from + t * 1000), base.fx, dt, ARENA, base.openWalls > 0);
+      const dir = id === this.me ? this.inputAt(from + t * 1000) : input;
+      moveHead(head, dir, fx, dt, ARENA, openWalls > 0);
       path.push([head.x, head.y]);
     }
-    return { ...head, path };
+    return { id, ...head, path };
   }
 }

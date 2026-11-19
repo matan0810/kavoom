@@ -185,9 +185,9 @@ export class Renderer {
     }
   }
 
-  // predicted: this device's own head drawn ahead of the server (see prediction.js),
-  // as { id, x, y, angle, r, path, trail }, or null.
-  draw(round, { dt = 0, intro = false, names = [], predicted = null } = {}) {
+  // predicted: heads to draw ahead of the server's positions (see prediction.js),
+  // as [{ id, x, y, angle, r, path, trail }]; players not in it are drawn as they are.
+  draw(round, { dt = 0, intro = false, names = [], predicted = [] } = {}) {
     if (!this.canvas) return;
     this.fit();
     const { ctx, w, h } = this;
@@ -220,12 +220,12 @@ export class Renderer {
 
     if (round) {
       for (const it of round.items) this.drawItem(it);
-      if (predicted && predicted.trail) this.drawPredictedTrail(predicted);
+      const ahead = new Map(predicted.map((h) => [h.id, h]));
+      for (const h of predicted) if (h.trail) this.drawPredictedTrail(h);
       for (const p of round.players) {
         if (!p.alive) continue;
-        const mine = predicted && predicted.id === p.id;
-        const head = mine ? { ...p, x: predicted.x, y: predicted.y, angle: predicted.angle } : p;
-        this.drawHead(head, intro, names[p.id]);
+        const h = ahead.get(p.id);
+        this.drawHead(h ? { ...p, x: h.x, y: h.y, angle: h.angle } : p, intro, names[p.id]);
       }
     }
     this.drawParticles(dt);

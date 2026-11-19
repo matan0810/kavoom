@@ -287,10 +287,15 @@ Nobody can cheat from the browser, and everyone sees the same game.
   movement code as the simulation (`shared/sim/motion.js`). Your head and the short stretch
   behind it are drawn there; the stretch is redrawn every frame and replaced by the real
   trail as it arrives. Snapshots carry the server's step count, so the timing follows the
-  server's clock and not the uneven arrival of messages. Other players, trails, power-ups
-  and knockouts are drawn exactly as the server sends them. You can therefore see your head
-  pass a spot the server then rules a crash, by up to the round trip; the server should
-  still be close to the players (Render, Frankfurt).
+  server's clock and not the uneven arrival of messages.
+- The other players' heads are moved on by the same time, so every head shows the same
+  moment and a close call looks the way the server judges it. Their input is unknown, so
+  each keeps turning the way its last two server positions show (a full turn or straight);
+  the next message corrects a change of mind. Measured through 140 ms of round trip with
+  uneven delivery, another player's head used to stand still in about a third of the frames
+  and jump in others; predicted, it moves evenly in every frame.
+- Trails, power-ups and knockouts are drawn exactly as the server sends them; the server
+  stays the only referee, and should be close to the players (Render, Frankfurt).
 
 ## 11. Tests
 
@@ -309,8 +314,9 @@ Nobody can cheat from the browser, and everyone sees the same game.
   layer, Back closes the top layer, no double Back, sticky game layer, Forward undone.
 - Service worker (`tests/sw.test.js`): in a sandbox with a fake network and cache: what is
   saved, the waking-up page never replacing the game, releases, no network.
-- Prediction (`tests/prediction.test.js`): the head moves exactly as in the round, and with
-  a simulated 120 ms connection the predicted head stays within a line's width of the truth.
+- Prediction (`tests/prediction.test.js`): the head moves exactly as in the round; with a
+  simulated 120 ms connection the predicted head stays within a line's width of the truth;
+  other players keep their turn, all heads move on by the same time.
 - Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode.
 - Layout and renderer: when the arena turns upright, and that the turn is a pure rotation.
 - Settings: bad saved values are replaced or clamped, language detection.

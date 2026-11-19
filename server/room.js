@@ -31,6 +31,11 @@ const SETTINGS = {
   locked: ['off', 'on'], // a locked room takes no new players
 };
 const AUTO_START = 10; // seconds a public room waits once two people are in it
+// A player whose connection drops keeps their seat this long, in the lobby too,
+// so a locked phone or a change of network does not cost them their place.
+export const SEAT_GRACE = 60;
+// The host keeps the role this long while away, then it passes to someone present.
+export const HOST_GRACE = 30;
 
 // Control characters, angle brackets, and the invisible characters that can
 // reorder or hide text (so a name cannot be made to look like another one).
@@ -101,6 +106,7 @@ export class Room {
       color: this.freeColor(color),
       bot: false,
       connected: true,
+      away: 0, // seconds since the connection dropped; only counts while not connected
       token: randomUUID(),
       send,
       input: 0,
@@ -138,18 +144,17 @@ export class Room {
     this.broadcast(this.info());
   }
 
-  // A dropped connection. In the lobby the seat is freed; during a match it is
-  // kept and a bot steers the line until the player comes back.
+  // A dropped connection. The seat is kept for SEAT_GRACE seconds, shown as
+  // away; during a match a bot steers the line until the player comes back.
   // `send` is the connection that dropped. If the member has since come back on
   // a newer connection, the old one closing must not throw them out.
   disconnect(id, send) {
     const m = this.members.find((x) => x.id === id);
     if (!m || (send && m.send !== send)) return;
-    if (this.state === 'lobby') return this.remove(id);
     m.connected = false;
+    m.away = 0;
     m.send = null;
     m.input = 0;
-    this.pickHost();
     this.broadcast(this.info());
   }
 
@@ -157,6 +162,7 @@ export class Room {
     const m = this.members.find((x) => x.token === token && !x.bot);
     if (!m) return null;
     m.connected = true;
+    m.away = 0;
     m.send = send;
     m.input = 0;
     this.pickHost();
@@ -166,15 +172,46 @@ export class Room {
     return m;
   }
 
+  // People who are here right now.
   humans() {
     return this.members.filter((m) => !m.bot && m.connected);
   }
 
+  // True once no person holds a seat, not even one who is away: nobody can come back.
+  abandoned() {
+    return this.members.every((m) => m.bot);
+  }
+
+  // The host stays host through a short drop. After HOST_GRACE seconds away, or
+  // once gone, the role passes to whoever has been in the room longest.
   pickHost() {
     const host = this.members.find((m) => m.id === this.hostId);
-    if (host && host.connected && !host.bot) return;
+    if (host && !host.bot && (host.connected || host.away < HOST_GRACE)) return;
     const next = this.humans()[0];
-    this.hostId = next ? next.id : 0;
+    if (next) this.hostId = next.id;
+    else if (!host) this.hostId = 0;
+  }
+
+  // Count time away, free the seats of those away too long (in the lobby), and
+  // hand over the host role when its holder has been away too long.
+  tickAway(dt) {
+    let changed = false;
+    for (const m of this.members) {
+      if (m.bot || m.connected) continue;
+      const before = m.away;
+      m.away += dt;
+      if (before < HOST_GRACE && m.away >= HOST_GRACE) changed = true;
+    }
+    if (this.state === 'lobby') {
+      const kept = this.members.filter((m) => m.bot || m.connected || m.away < SEAT_GRACE);
+      if (kept.length !== this.members.length) {
+        this.members = kept;
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    this.pickHost();
+    this.broadcast(this.info());
   }
 
   info() {
@@ -368,6 +405,9 @@ export class Room {
 
   tick(dt) {
     this.emptyFor = this.humans().length ? 0 : this.emptyFor + dt;
+    this.tickAway(dt);
+    // With nobody here the match waits: bots do not play on to an empty room.
+    if (this.state === 'match' && this.emptyFor > 0) return;
     if (this.state !== 'match') {
       if (this.public) this.tickAutoStart(dt);
       return;
@@ -432,7 +472,7 @@ export class Room {
     }
     this.state = 'lobby';
     this.phase = null;
-    this.members = this.members.filter((m) => m.connected);
+    // Players away for longer than the grace leave on the next tick; the rest keep their seats.
     this.pickHost();
     this.broadcast(this.info());
   }

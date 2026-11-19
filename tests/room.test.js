@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Room, cleanName } from '../server/room.js';
+import { Room, cleanName, SEAT_GRACE, HOST_GRACE } from '../server/room.js';
 
 function client() {
   const c = { log: [] };
@@ -141,8 +141,11 @@ test('the host role moves on when the host leaves', () => {
   assert.equal(room.hostId, mb.id);
   assert.equal(b.last('room').members.length, 1);
   room.disconnect(mb.id);
+  assert.equal(room.members.length, 1, 'a dropped player keeps the seat for a while');
+  assert.equal(room.abandoned(), false);
+  run(room, SEAT_GRACE + 1);
   assert.equal(room.members.length, 0);
-  room.tick(1);
+  assert.equal(room.abandoned(), true);
   assert.ok(room.emptyFor > 0);
 });
 
@@ -318,4 +321,77 @@ test('the host can rename a bot in the lobby, and nobody can rename a person thi
   room.handle(ma.id, { t: 'start' });
   room.handle(ma.id, { t: 'renameBot', id: bot.id, name: 'Late' });
   assert.equal(bot.name, 'Robo', 'not during a match');
+});
+
+test('a player who drops in the lobby keeps the seat and comes back to it', () => {
+  const { room, a, b, mb } = setup();
+  room.disconnect(mb.id);
+  assert.equal(a.last('room').members.find((m) => m.id === mb.id).on, false, 'shown as away');
+  run(room, SEAT_GRACE - 5);
+  const c = client();
+  const back = room.reconnect(b.last('joined').token, c.send);
+  assert.equal(back.id, mb.id, 'the same seat, not a new player');
+  assert.equal(room.members.length, 2);
+  run(room, SEAT_GRACE + 5);
+  assert.equal(room.members.length, 2, 'back in time: the seat is safe');
+});
+
+test('the host stays host through a short drop, and hands over after a long one', () => {
+  const { room, a, b, ma, mb } = setup();
+  room.disconnect(ma.id);
+  run(room, HOST_GRACE - 5);
+  assert.equal(room.hostId, ma.id, 'a locked phone does not cost the host role');
+  room.reconnect(a.last('joined').token, client().send);
+  assert.equal(room.hostId, ma.id);
+
+  room.disconnect(ma.id);
+  run(room, HOST_GRACE + 1);
+  assert.equal(room.hostId, mb.id, 'after a long absence someone present takes over');
+  assert.equal(b.last('room').host, mb.id);
+  room.reconnect(a.last('joined').token, client().send);
+  assert.equal(room.hostId, mb.id, 'and keeps it when the old host comes back');
+});
+
+test('with nobody here, the match waits instead of bots playing on', () => {
+  const { room, a, ma, mb } = setup();
+  room.handle(ma.id, { t: 'addBot' });
+  room.handle(ma.id, { t: 'start' });
+  run(room, 4);
+  room.disconnect(ma.id);
+  room.disconnect(mb.id);
+  const before = a.all('s').length;
+  const stepsBefore = room.round.stepN;
+  run(room, 10);
+  assert.equal(room.round.stepN, stepsBefore, 'frozen');
+  room.reconnect(a.last('joined').token, client().send);
+  run(room, 1);
+  assert.ok(
+    room.round.stepN > stepsBefore || room.phase !== 'playing',
+    'and goes on when someone is back',
+  );
+  assert.ok(before > 0);
+});
+
+test('at the end of a match, players away only briefly keep their seats', () => {
+  const room = new Room('TEST', 7);
+  const a = client();
+  const b = client();
+  room.add('A', 0, a.send);
+  const mb = room.add('B', 1, b.send);
+  room.settings.length = 'custom';
+  room.settings.target = 1;
+  room.settings.winBy2 = 'off';
+  room.handle(room.hostId, { t: 'start' });
+  room.disconnect(mb.id);
+  let away = 0;
+  for (; away < 120 && room.state === 'match'; away += 1 / 60) room.tick(1 / 60);
+  assert.equal(room.state, 'lobby');
+  assert.ok(away < SEAT_GRACE, 'a one-point match is short');
+  room.tick(1 / 60);
+  assert.ok(
+    room.members.some((m) => m.id === mb.id),
+    'B keeps the seat for now',
+  );
+  run(room, SEAT_GRACE - away + 1);
+  assert.ok(!room.members.some((m) => m.id === mb.id), 'and loses it once away too long');
 });

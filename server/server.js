@@ -12,7 +12,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { Room } from './room.js';
+import { Room, SEAT_GRACE } from './room.js';
 
 // The browser files are built by Vite into dist/ (npm run build).
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
@@ -299,8 +299,8 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
         rooms.delete(code);
         continue;
       }
-      // A lobby with nobody in it goes at once; a match waits 30s for reconnects.
-      if (room.emptyFor > (room.state === 'lobby' ? 0 : 30)) rooms.delete(code);
+      // A room goes once no person holds a seat, or nobody has been here for the seat grace.
+      if (room.abandoned() || room.emptyFor > SEAT_GRACE) rooms.delete(code);
     }
   }, TICK_MS);
 

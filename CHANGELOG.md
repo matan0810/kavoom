@@ -9,6 +9,7 @@ breaking changes are major.
 
 ### Added
 - The host of an online room can rename a bot in the lobby: tap its name and type.
+- While people play online, the server writes one health line a minute to its log in Render (rooms, players, CPU, and whether the game loop ran late), so a stalling server shows up. It holds counts only, nothing about players.
 
 ### Fixed
 - Online: the other players' lines no longer stutter and jump. They now move as smoothly as your own, even when messages from the server arrive unevenly.

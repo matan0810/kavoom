@@ -437,6 +437,9 @@ export class Room {
         n++;
       }
       if (n === MAX_STEPS_PER_TICK) this.acc = 0;
+      // A snapshot every tick, 60 a second. Measured: at 30 the other players'
+      // heads needed visible corrections in about one frame in ten, and the
+      // server's CPU hardly changed.
       this.broadcast(this.snapshot());
       if (r.over) this.endRound();
     } else if (this.phase === 'roundEnd') {

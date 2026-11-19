@@ -2,7 +2,8 @@
 
 ## What the server stores
 
-Nothing. There are no accounts, no database and no logs with player data. An online
+Nothing. There are no accounts, no database and no logs with player data. While people play,
+the server logs one line a minute with counts only (rooms, players, CPU, late ticks). An online
 player's name and colour live in server memory only while the room is open. The server
 does not record IP addresses. Each player's settings (language, keys, colours) are kept
 only in their own browser. The service worker keeps a copy of the

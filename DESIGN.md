@@ -311,6 +311,13 @@ Nobody can cheat from the browser, and everyone sees the same game.
   the next message corrects a change of mind. Measured through 140 ms of round trip with
   uneven delivery, another player's head used to stand still in about a third of the frames
   and jump in others; predicted, it moves evenly in every frame.
+- Load, measured (November 2026, on the development machine): a five-person match costs
+  the server about 2 to 3 ms of CPU per 100 ms on average. Node's own background work (memory
+  clean-up, compiling) adds short bursts of up to about 20 to 30 ms in a 100 ms window, a few
+  times a minute, even with nobody playing. Render's free plan allows 10 ms per 100 ms, so
+  such a burst can pause the server for the rest of that window. Snapshots at 30 a second did
+  not reduce this and made other heads jump, so they stay at 60. While anyone plays, the
+  server logs once a minute: rooms, players, CPU, and ticks that ran more than 50 ms late.
 - Trails, power-ups and knockouts are drawn exactly as the server sends them; the server
   stays the only referee, and should be close to the players (Render, Frankfurt).
 

@@ -299,3 +299,24 @@ test('a removed player is out of the room and their connection can join again el
     host.ws.close();
     guest.ws.close();
   }));
+
+test('while people play, the game loop health is logged with counts only', () =>
+  withServer(
+    async (port) => {
+      const host = await join(port, { t: 'create', name: 'Secret Name' });
+      host.ws.send(JSON.stringify({ t: 'addBot' }));
+      host.ws.send(JSON.stringify({ t: 'start' }));
+      await new Promise((r) => setTimeout(r, 400));
+      host.ws.close();
+    },
+    { log: (...a) => logged.push(a.join(' ')), healthEveryMs: 100 },
+  ).then(() => {
+    const lines = logged.filter((l) => l.startsWith('health:'));
+    assert.ok(lines.length > 0);
+    assert.match(
+      lines[0],
+      /^health: 1 rooms, 1 players, cpu [\d.]+%, ticks over 50 ms late: \d+, worst -?\d+ ms$/,
+    );
+    assert.ok(!logged.some((l) => l.includes('Secret Name')), 'no player data in the log');
+  }));
+const logged = [];

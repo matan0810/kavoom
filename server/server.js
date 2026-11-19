@@ -115,7 +115,13 @@ function originAllowed(req, extra) {
   return host === req.headers.host || extra.includes(origin);
 }
 
-export function startServer({ port = 8080, allowedOrigins = [], log = console.log } = {}) {
+// healthEveryMs: how often the game loop's health is logged (tests make it short).
+export function startServer({
+  port = 8080,
+  allowedOrigins = [],
+  log = console.log,
+  healthEveryMs = 60000,
+} = {}) {
   const rooms = new Map();
   const perIp = new Map(); // address -> open connections
   const joins = new Map(); // address -> { count, since } for the current minute
@@ -286,8 +292,31 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
   });
 
   let last = performance.now();
+  // Health of the game loop, logged once a minute while anyone plays: whether
+  // ticks ran late (the server stalled, for example on a CPU limit) and how
+  // much CPU the process used. Counts only, nothing about players.
+  const health = { late: 0, worst: 0, cpu: process.cpuUsage(), since: performance.now() };
+  const reportHealth = () => {
+    const now = performance.now();
+    const used = process.cpuUsage(health.cpu);
+    const cpu = ((used.user + used.system) / 1000 / (now - health.since)) * 100;
+    let players = 0;
+    for (const room of rooms.values()) players += room.humans().length;
+    if (players > 0) {
+      log(
+        `health: ${rooms.size} rooms, ${players} players, cpu ${cpu.toFixed(1)}%, ` +
+          `ticks over 50 ms late: ${health.late}, worst ${health.worst.toFixed(0)} ms`,
+      );
+    }
+    Object.assign(health, { late: 0, worst: 0, cpu: process.cpuUsage(), since: now });
+  };
+  const healthTimer = setInterval(reportHealth, healthEveryMs);
+
   const tick = setInterval(() => {
     const now = performance.now();
+    const late = now - last - TICK_MS;
+    if (late > 50) health.late++;
+    health.worst = Math.max(health.worst, late);
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
     for (const [code, room] of rooms) {
@@ -325,6 +354,7 @@ export function startServer({ port = 8080, allowedOrigins = [], log = console.lo
     rooms,
     close() {
       clearInterval(tick);
+      clearInterval(healthTimer);
       clearInterval(sweep);
       for (const ws of wss.clients) ws.terminate();
       wss.close();

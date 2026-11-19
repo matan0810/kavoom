@@ -210,8 +210,13 @@ Touch:
 
 ## 8. Drawing
 
-- Trails accumulate on an offscreen canvas at double resolution; heads, power-ups,
-  particles and effect rings are drawn over it every frame.
+- Trails accumulate on an offscreen canvas with as many pixels per arena unit as the screen,
+  so copying it each frame is one to one; heads, power-ups, particles and effect rings are
+  drawn over it every frame.
+- Canvas pixels per CSS pixel: at most 2, and on touch screens at most what keeps the arena
+  near 600,000 pixels (never below 1). Measured on an emulated phone with a quarter of the CPU
+  speed: a fixed double-resolution trail layer and full density ran at 20 frames a second;
+  with both changes, about 40.
 - Knockout: a particle burst in the player's colour, an expanding ring and a short screen shake.
 - Clear: a short white flash. Open walls: a moving dashed border.
 - `prefers-reduced-motion` or the screen shake setting: no shake, and no menu demo

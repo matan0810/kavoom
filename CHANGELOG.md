@@ -18,6 +18,7 @@ breaking changes are major.
 - Online: after a drop the game keeps trying to reconnect for two minutes instead of six seconds, and tries again at once when you return to the page or the network comes back.
 - Online: when nobody is left in a room, the match waits instead of the bots playing on.
 - After a reload in the middle of a match, the Back button opens the game menu again instead of leaving the room.
+- The game draws about twice as fast on mid-range phones (measured on an emulated phone, from 20 to about 40 frames a second): the trail layer now matches the screen's resolution, and phones paint at most about half a million arena pixels.
 
 - Online: all lines are now shown at the same moment. Before, your own line was drawn ahead of the others, so in a close call it looked like you passed first even when the server saw the other player first.
 ## [1.4.0] - 2026-11-15

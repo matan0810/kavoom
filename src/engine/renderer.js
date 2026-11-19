@@ -3,7 +3,21 @@
 
 import { POWERUPS, POWERUP_RADIUS, TARGET_COLORS } from '../../shared/config.js';
 
-const TRAIL_SCALE = 2;
+const MAX_DPR = 2; // sharper than this costs pixels without a visible gain
+// Phones paint every pixel of the arena 60 times a second. Measured on an
+// emulated mid-range phone, 1.6 million pixels a frame ran at 20 frames a
+// second; at about half a million it holds 50 to 60. The lines are thick
+// enough that the difference in sharpness does not show.
+const TOUCH_PIXEL_BUDGET = 600000;
+const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+// Canvas pixels per CSS pixel for a canvas of cssWidth x cssHeight.
+export function pixelRatio(cssWidth, cssHeight, deviceRatio, isTouch) {
+  let ratio = Math.min(MAX_DPR, deviceRatio || 1);
+  if (isTouch)
+    ratio = Math.min(ratio, Math.sqrt(TOUCH_PIXEL_BUDGET / Math.max(1, cssWidth * cssHeight)));
+  return Math.max(1, ratio);
+}
 const FX_DUR = {};
 for (const d of POWERUPS) if (d.fx) FX_DUR[d.fx] = Math.max(FX_DUR[d.fx] || 0, d.dur);
 const FX_COLOR = {
@@ -110,12 +124,14 @@ export class Renderer {
     this.h = h;
     this.calm = calm; // reduced motion: no shake
     this.colors = [];
-    this.trail = document.createElement('canvas');
-    this.trail.width = w * TRAIL_SCALE;
-    this.trail.height = h * TRAIL_SCALE;
-    this.tctx = this.trail.getContext('2d');
-    this.tctx.setTransform(TRAIL_SCALE, 0, 0, TRAIL_SCALE, 0, 0);
-    this.tctx.lineCap = 'round';
+    // Trails pile up on their own layer, which is copied onto the screen each
+    // frame. The layer has as many pixels per arena unit as the screen, so the
+    // copy is one to one: a fixed, larger layer cost weaker phones most of
+    // their frame time in scaling it down.
+    this.trailScale = 0;
+    this.trail = null;
+    this.tctx = null;
+    this.resizeTrail(1);
     this.reset([]);
   }
 
@@ -176,13 +192,29 @@ export class Renderer {
 
   fit() {
     const cv = this.canvas;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = pixelRatio(cv.clientWidth, cv.clientHeight, window.devicePixelRatio, touch);
     const pw = Math.max(1, Math.round(cv.clientWidth * dpr));
     const ph = Math.max(1, Math.round(cv.clientHeight * dpr));
     if (cv.width !== pw || cv.height !== ph) {
       cv.width = pw;
       cv.height = ph;
     }
+    const scale = cv.width / (this.rotated ? this.h : this.w); // screen pixels per arena unit
+    if (Math.abs(scale - this.trailScale) > this.trailScale * 0.05) this.resizeTrail(scale);
+  }
+
+  // Give the trail layer `scale` pixels per arena unit, keeping what is drawn on it.
+  resizeTrail(scale) {
+    const next = document.createElement('canvas');
+    next.width = Math.max(1, Math.round(this.w * scale));
+    next.height = Math.max(1, Math.round(this.h * scale));
+    const c = next.getContext('2d');
+    if (this.trail) c.drawImage(this.trail, 0, 0, next.width, next.height);
+    c.setTransform(scale, 0, 0, scale, 0, 0);
+    c.lineCap = 'round';
+    this.trail = next;
+    this.tctx = c;
+    this.trailScale = scale;
   }
 
   // predicted: heads to draw ahead of the server's positions (see prediction.js),

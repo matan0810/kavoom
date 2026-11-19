@@ -77,7 +77,13 @@ export function GameDialogs({
     return (
       <Dialog
         title={t(local ? 'quitTitle' : 'leaveTitle')}
-        text={t(local ? 'quitText' : 'leaveText')}
+        text={t(
+          local
+            ? 'quitText'
+            : online.room?.settings.leavers === 'out'
+              ? 'leaveTextOut'
+              : 'leaveText',
+        )}
         onClose={onResume}
         actions={[
           { label: t('keepPlaying'), onClick: onResume, primary: true },

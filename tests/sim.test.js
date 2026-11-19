@@ -298,3 +298,18 @@ test('the target follows the length and the number of players', () => {
   assert.equal(leadFor('on'), 2);
   assert.equal(leadFor('off'), 1);
 });
+
+test('a line that retires gives nobody a point, and the last one left takes the round', () => {
+  const deaths = [];
+  const round = makeRound(3, { hooks: { death: (p) => deaths.push(p.id) } });
+  round.retire(1);
+  assert.deepEqual(round.points, [0, 0, 0]);
+  assert.equal(round.over, false);
+  assert.deepEqual(deaths, [1], 'shown like a knockout');
+  round.retire(2, { silent: true });
+  assert.deepEqual(deaths, [1], 'unless silent');
+  assert.equal(round.over, true);
+  assert.equal(round.winner, 0);
+  round.retire(0);
+  assert.equal(round.players[0].alive, true, 'nothing changes once the round is over');
+});

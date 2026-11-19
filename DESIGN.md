@@ -287,6 +287,12 @@ Nobody can cheat from the browser, and everyone sees the same game.
   for 60 seconds in the lobby, and for the whole match during one (a medium bot steers their
   line meanwhile). The host keeps the role for 30 seconds away; after that it passes to the
   person who has been in the room longest, who keeps it when the old host returns.
+- Someone leaves mid-match (the Leave button, or away past the 60-second seat grace): the
+  host's "someone leaves mid-match" setting decides. "A bot plays on" (the default): a medium
+  bot steers their line to the end of the match. "Their line leaves": the line is taken out
+  of the round at once with no point for anyone, starts every later round already out, and
+  its score stays on the board marked as left. When fewer than two lines remain, the match
+  ends and the best of those still in wins.
 - Coming back: the device remembers its seat (room code and token) in `localStorage` for 10
   minutes. Opening the game with a remembered seat goes straight back to it; the online tab
   also offers "Back to room", and joining with that room's code takes back the same seat.

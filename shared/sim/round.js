@@ -206,6 +206,22 @@ export class Round {
     if (this.powerups) this.stepItems();
   }
 
+  // Takes a line out of the round without a crash, for a player who left the
+  // game: nobody earns a point for it. silent: no knockout is shown (a line
+  // that never starts a round).
+  retire(id, { silent = false } = {}) {
+    const p = this.players[id];
+    if (!p || !p.alive || this.over) return;
+    p.alive = false;
+    this.aliveCount--;
+    if (!silent && this.hooks.death) this.hooks.death(p);
+    if (this.aliveCount <= (this.players.length > 1 ? 1 : 0)) {
+      this.over = true;
+      const last = this.players.find((q) => q.alive);
+      this.winner = last ? last.id : -1;
+    }
+  }
+
   stepItems() {
     const { items, hooks } = this;
     for (let i = items.length - 1; i >= 0; i--) {

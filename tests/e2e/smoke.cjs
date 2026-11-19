@@ -335,6 +335,31 @@ async function main() {
   assert.ok(await host.$('.join-row'), 'Back in a lobby leaves the room');
   step('online: Back in a lobby leaves the room');
 
+  // Leavers: the host picks "their line leaves", and a guest leaves mid-match.
+  await host.click('.block > .btn:not(.primary)'); // room for friends
+  await host.waitForSelector('.room-code');
+  const leaveCode = (await text(host, '.room-code')).trim();
+  const quitter = await open({ ...devices['iPhone 13'], locale: 'en-US' }, 'quitter');
+  await quitter.goto(`${url}#${leaveCode}`);
+  await quitter.click('.join-row .btn');
+  await quitter.waitForSelector('.room-code');
+  await host.click('.room-actions .btn:nth-child(2)'); // a bot, so two lines stay
+  await host.click('.seg[aria-label="Someone leaves mid-match"] button:nth-child(2)');
+  await quitter.waitForFunction(() =>
+    document
+      .querySelector('.seg[aria-label="Someone leaves mid-match"] [aria-pressed="true"]')
+      ?.textContent.includes('leaves'),
+  );
+  await host.click('.room-actions .btn.primary');
+  await quitter.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
+  await quitter.goBack();
+  await settle(quitter);
+  assert.match(await text(quitter, '.card p'), /Your line leaves the game/);
+  await quitter.click('.overlay-actions .btn:last-child');
+  await host.waitForFunction(() => document.querySelector('.scores li.gone'));
+  assert.match(await text(host, '.scores li.gone .who'), /left/);
+  step('online: with "their line leaves", a leaver is out and marked on the board');
+
   await browser.close();
   await app.close();
   assert.deepEqual(problems, [], 'no console errors, warnings or CSP violations');

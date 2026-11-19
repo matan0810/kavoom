@@ -123,6 +123,19 @@ export function RoomLobby({ online }) {
         </SettingRow>
       )}
 
+      <SettingRow label={t('whenLeaving')}>
+        <Segmented
+          label={t('whenLeaving')}
+          options={[
+            ['bot', t('leaversBot')],
+            ['out', t('leaversOut')],
+          ]}
+          value={room.settings.leavers}
+          disabled={!isHost || !inLobby}
+          onChange={(val) => online.send({ t: 'set', key: 'leavers', val })}
+        />
+      </SettingRow>
+
       <p className="hint" role="status">
         {lobbyHint(t, room, isHost)}
       </p>

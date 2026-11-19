@@ -279,6 +279,16 @@ input[type='range'] {
   color: var(--muted);
   text-decoration: line-through;
 }
+.scores li.gone {
+  opacity: 0.55;
+}
+.scores li.gone .who {
+  text-decoration: none; /* "left" already says it */
+}
+.scores .who small {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
 .scores li.out .dot {
   background: transparent;
   box-shadow: inset 0 0 0 2px var(--c);

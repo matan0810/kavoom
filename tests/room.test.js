@@ -173,7 +173,7 @@ test('setting keys that are not settings are ignored without an error', () => {
     assert.doesNotThrow(() => room.handle(room.hostId, { t: 'set', key, val: 'x' }));
   }
   assert.equal(room.settings.length, 'normal');
-  assert.equal(Object.keys(room.settings).length, 6);
+  assert.equal(Object.keys(room.settings).length, 7);
 });
 
 test('a locked room takes no newcomers, but a player who dropped can still come back', () => {
@@ -394,4 +394,73 @@ test('at the end of a match, players away only briefly keep their seats', () => 
   );
   run(room, SEAT_GRACE - away + 1);
   assert.ok(!room.members.some((m) => m.id === mb.id), 'and loses it once away too long');
+});
+
+// A three-line match with B leaving, under the given rule for leavers.
+function leavingMatch(leavers) {
+  const room = new Room('TEST', 5);
+  const a = client();
+  const b = client();
+  const c = client();
+  const ma = room.add('A', 0, a.send);
+  const mb = room.add('B', 1, b.send);
+  const mc = room.add('C', 2, c.send);
+  room.handle(ma.id, { t: 'set', key: 'leavers', val: leavers });
+  room.handle(ma.id, { t: 'start' });
+  for (let i = 0; i < 60 * 3 && room.phase !== 'playing'; i++) room.tick(1 / 60);
+  return { room, a, ma, mb, mc };
+}
+
+test('by default a bot plays on for a player who leaves', () => {
+  const { room, mb } = leavingMatch('bot');
+  room.handle(mb.id, { t: 'leave' });
+  assert.equal(room.round.players[1].alive, true);
+  room.tick(1 / 60);
+  assert.ok(room.round.players[1].bot, 'a bot steers the line');
+});
+
+test('with "their line leaves", the line is out at once, with no point for anyone', () => {
+  const { room, a, mb } = leavingMatch('out');
+  const before = [...room.round.points];
+  room.handle(mb.id, { t: 'leave' });
+  assert.equal(room.round.players[1].alive, false);
+  assert.deepEqual(room.round.points, before, 'leaving is not a knockout');
+  assert.deepEqual(a.last('gone'), { t: 'gone', i: 1 });
+  // In every round after, the line starts out, and its score stays.
+  const rounds = () => a.all('round').length;
+  const first = rounds();
+  for (let i = 0; i < 60 * 120 && rounds() === first; i++) room.tick(1 / 60);
+  assert.equal(rounds(), first + 1, 'the next round began');
+  assert.equal(room.round.players[1].alive, false);
+  assert.equal(room.round.players[0].alive, true);
+  assert.deepEqual(a.last('round').gone, [1]);
+});
+
+test('with "their line leaves", the match ends when only one line is left', () => {
+  const { room, a, mb, mc } = leavingMatch('out');
+  room.handle(mb.id, { t: 'leave' });
+  room.handle(mc.id, { t: 'leave' });
+  for (let i = 0; i < 10 && room.state === 'match'; i++) room.tick(1 / 60);
+  assert.equal(room.state, 'lobby');
+  assert.equal(a.last('roundEnd').champion, 0, 'the one still playing wins');
+});
+
+test('with "their line leaves", a player away past the seat grace counts as gone', () => {
+  const { room, a, mb } = leavingMatch('out');
+  room.disconnect(mb.id);
+  run(room, SEAT_GRACE - 1);
+  assert.ok(!room.order[1].out, 'still has time to come back');
+  run(room, 2);
+  assert.ok(room.order[1].out);
+  assert.ok(a.all('gone').length === 1);
+});
+
+test('only the host picks the rule, in the lobby, from the two choices', () => {
+  const { room, ma, mb } = setup();
+  room.handle(mb.id, { t: 'set', key: 'leavers', val: 'out' });
+  assert.equal(room.settings.leavers, 'bot');
+  room.handle(ma.id, { t: 'set', key: 'leavers', val: 'vanish' });
+  assert.equal(room.settings.leavers, 'bot');
+  room.handle(ma.id, { t: 'set', key: 'leavers', val: 'out' });
+  assert.equal(room.settings.leavers, 'out');
 });

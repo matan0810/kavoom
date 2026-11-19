@@ -83,6 +83,14 @@ const STRINGS = {
   quitText: { he: 'הניקוד של המשחק הנוכחי יימחק.', en: 'The current score will be lost.' },
   keepPlaying: { he: 'המשך לשחק', en: 'Keep playing' },
   quitYes: { he: 'צא לתפריט', en: 'Quit to menu' },
+  whenLeaving: { he: 'מי שעוזב באמצע', en: 'Someone leaves mid-match' },
+  leaversBot: { he: 'בוט ממשיך', en: 'A bot plays on' },
+  leaversOut: { he: 'הקו יוצא', en: 'Their line leaves' },
+  leftGame: { he: 'יצא', en: 'left' },
+  leaveTextOut: {
+    he: 'הקו שלך ייצא מהמשחק, והנקודות שלך יישארו בטבלה.',
+    en: 'Your line leaves the game, and your points stay on the board.',
+  },
   leaveTitle: { he: 'לעזוב את החדר?', en: 'Leave the room?' },
   leaveText: {
     he: 'בוט ינהג בקו שלך עד סוף המשחק.',

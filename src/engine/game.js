@@ -101,6 +101,7 @@ export class Game {
         color: hud.colors[i],
         score: hud.scores[i] + (live ? live[i] || 0 : 0),
         out: state === 'playing' && !!view && !!view.players[i] && !view.players[i].alive,
+        gone: !!hud.gone && hud.gone.has(i), // left the online match; their line is out for good
       })),
     };
   }
@@ -246,6 +247,7 @@ export class Game {
       target: m.target,
       lead: m.lead ?? 2, // a server from before this setting always played to a lead of 2
       roundNo: m.roundNo,
+      gone: new Set(m.gone || []),
     };
     this.renderer.reset(this.hud.colors);
     this.draw = this.renderer.hooks();
@@ -314,6 +316,13 @@ export class Game {
       return; // a late snapshot must not undo the round banner
     }
     if (died || first) this.publish();
+  }
+
+  // A player left the match and their line is out of the game for good.
+  onlineGone(m) {
+    if (this.mode !== 'online' || !this.hud.gone) return;
+    this.hud.gone.add(m.i);
+    this.publish();
   }
 
   onlineRoundEnd(m) {

@@ -29,6 +29,7 @@ const SETTINGS = {
   powerups: ['on', 'off'],
   botLevel: Object.keys(BOT_LEVELS),
   locked: ['off', 'on'], // a locked room takes no new players
+  leavers: ['bot', 'out'], // a player who leaves a match: a bot plays on, or the line leaves
 };
 const AUTO_START = 10; // seconds a public room waits once two people are in it
 // A player whose connection drops keeps their seat this long, in the lobby too,
@@ -72,6 +73,7 @@ export class Room {
       powerups: 'on',
       botLevel: 'medium',
       locked: 'off',
+      leavers: 'bot',
     };
     this.state = 'lobby'; // 'lobby' | 'match'
     this.phase = null; // 'countdown' | 'playing' | 'roundEnd'
@@ -137,6 +139,7 @@ export class Room {
   remove(id) {
     const m = this.members.find((x) => x.id === id);
     if (!m) return;
+    this.takeOut(m);
     m.connected = false;
     m.send = null;
     this.members = this.members.filter((x) => x !== m);
@@ -201,6 +204,7 @@ export class Room {
       const before = m.away;
       m.away += dt;
       if (before < HOST_GRACE && m.away >= HOST_GRACE) changed = true;
+      if (before < SEAT_GRACE && m.away >= SEAT_GRACE) this.takeOut(m); // gone for good
     }
     if (this.state === 'lobby') {
       const kept = this.members.filter((m) => m.bot || m.connected || m.away < SEAT_GRACE);
@@ -312,6 +316,32 @@ export class Room {
 
   // ---------- match ----------
 
+  // A player left the match (on purpose, or away past the seat grace). With
+  // "leavers: out" their line leaves the game: out of this round at once, with
+  // no point for anyone, and out of every round after, its score kept on the
+  // board. With "bot" (the default) a bot plays their line to the end.
+  takeOut(m) {
+    if (this.state !== 'match' || this.settings.leavers !== 'out') return;
+    const i = this.order.findIndex((e) => e.m === m);
+    if (i < 0 || this.order[i].out) return;
+    this.order[i].out = true;
+    if (this.round) this.round.retire(i);
+    this.broadcast({ t: 'gone', i });
+  }
+
+  // The line with the most points, among those still in the game if any are.
+  leader() {
+    const lines = this.order.map((e, i) => i);
+    const still = lines.filter((i) => !this.order[i].out);
+    const pool = still.length ? still : lines;
+    return pool.reduce((best, i) => (this.match.scores[i] > this.match.scores[best] ? i : best));
+  }
+
+  // Lines still in the game.
+  activeLines() {
+    return this.order.filter((e) => !e.out).length;
+  }
+
   start() {
     this.order = this.members.map((m) => ({
       id: m.id,
@@ -351,6 +381,7 @@ export class Room {
         },
       },
     });
+    this.order.forEach((e, i) => e.out && this.round.retire(i, { silent: true }));
     this.phase = 'countdown';
     this.timer = COUNTDOWN;
     this.acc = 0;
@@ -384,6 +415,7 @@ export class Room {
       target: this.match.target,
       lead: this.match.lead,
       roundNo: this.match.roundNo + 1,
+      gone: this.order.flatMap((e, i) => (e.out ? [i] : [])),
       segs: withLog ? this.segLog : [],
     };
   }
@@ -460,7 +492,10 @@ export class Room {
 
   endRound() {
     this.match.applyRound(this.round.points);
-    const champion = this.match.winner();
+    let champion = this.match.winner();
+    // Fewer than two lines left in the game: the match is over. The best of those
+    // still in wins; if nobody is (only watchers stayed), the best of all.
+    if (champion < 0 && this.activeLines() < 2) champion = this.leader();
     this.broadcast({
       t: 'roundEnd',
       winner: this.round.winner,

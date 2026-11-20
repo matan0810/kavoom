@@ -76,6 +76,29 @@ function arrow(ctx, x0, x1, y) {
   ctx.stroke();
 }
 
+// A power-up as it looks on the arena, centred on the origin, in arena units.
+function paintPowerup(ctx, def) {
+  ctx.beginPath();
+  ctx.arc(0, 0, POWERUP_RADIUS, 0, Math.PI * 2);
+  ctx.fillStyle = '#141930';
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = TARGET_COLORS[def.target];
+  ctx.stroke();
+  ctx.scale(8, 8);
+  ctx.fillStyle = ctx.strokeStyle = '#f4f5ff';
+  glyph(ctx, def.id);
+}
+
+// The same picture on a small canvas of its own, for the rules.
+export function drawPowerupIcon(canvas, def) {
+  const ctx = canvas.getContext('2d');
+  const scale = canvas.width / (2 * (POWERUP_RADIUS + 2));
+  ctx.setTransform(scale, 0, 0, scale, canvas.width / 2, canvas.height / 2);
+  ctx.clearRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2);
+  paintPowerup(ctx, def);
+}
+
 function glyph(ctx, id) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -286,21 +309,11 @@ export class Renderer {
     const { ctx } = this;
     if (it.life < 2 && Math.floor(it.life * 6) % 2 === 0) return;
     const pulse = 1 + Math.sin(this.clock * 4 + it.x) * 0.06;
-    const color = TARGET_COLORS[it.def.target];
     ctx.save();
     ctx.translate(it.x, it.y);
     ctx.scale(pulse, pulse);
     if (this.rotated) ctx.rotate(-Math.PI / 2); // keep the icon upright
-    ctx.beginPath();
-    ctx.arc(0, 0, POWERUP_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = '#141930';
-    ctx.fill();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = color;
-    ctx.stroke();
-    ctx.scale(8, 8);
-    ctx.fillStyle = ctx.strokeStyle = '#f4f5ff';
-    glyph(ctx, it.def.id);
+    paintPowerup(ctx, it.def);
     ctx.restore();
   }
 

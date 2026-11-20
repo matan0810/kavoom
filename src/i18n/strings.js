@@ -31,21 +31,74 @@ const STRINGS = {
     en: `${n} players, first to ${target}${by2 ? ', win by 2' : ''}.`,
   }),
   howTitle: { he: 'איך משחקים', en: 'How to play' },
-  how1: {
-    he: 'לכל שחקן שני מקשים: שמאלה וימינה. הקו לא עוצר.',
-    en: 'Each player has two keys: left and right. The line never stops.',
+  helpButton: { he: 'איך משחקים?', en: 'How to play?' },
+  rulesAimTitle: { he: 'המטרה', en: 'The aim' },
+  rulesAim: {
+    he: 'כל שחקן הוא קו שזז קדימה כל הזמן ומשאיר אחריו שובל. מי שנוגע בקיר או בשובל כלשהו, כולל השובל של עצמו, נפסל. מי שנשאר אחרון מנצח בסיבוב.',
+    en: 'Every player is a line that keeps moving forward and leaves a trail. Touch a wall or any trail, your own included, and you are out. The last one left wins the round.',
   },
-  how2: {
-    he: 'בשובל נפתחים חורים, ואפשר לעבור דרכם.',
-    en: 'Gaps open in every trail, and you can slip through them.',
+  rulesSteerTitle: { he: 'היגוי', en: 'Steering' },
+  rulesSteer: {
+    he: 'יש רק שני כיוונים: שמאלה וימינה, ביחס לכיוון שבו הקו נוסע. במכשיר אחד לכל שחקן שני מקשים משלו, ואפשר להחליף אותם ברשימת המשתתפים. בטלפון: הכפתורים שעל המסך, או נגיעה בצד ימין או שמאל של הזירה. באונליין: ← → או A D.',
+    en: 'There are only two directions: left and right, relative to where your line is heading. On one device each player has two keys of their own, which you can change in the player list. On a phone: the buttons on the screen, or a touch on the left or right half of the arena. Online: ← → or A D.',
   },
-  how3: {
-    he: 'כל פסילה נותנת נקודה לכל מי שעדיין במשחק.',
-    en: 'Every crash gives a point to everyone still alive.',
+  rulesGapsTitle: { he: 'חורים בשובל', en: 'Gaps' },
+  rulesGaps: {
+    he: 'מדי פעם נפתח בכל שובל חור קטן. אפשר לעבור דרכו, גם דרך שובל של מישהו אחר.',
+    en: 'Every now and then a small gap opens in each trail. You can slip through it, someone else’s trail included.',
   },
-  how4: {
-    he: 'בונוס ירוק משפיע עליך, אדום על היריבים, כחול על כולם.',
-    en: 'Green power-ups affect you, red ones your rivals, blue ones everyone.',
+  rulesScoreTitle: { he: 'ניקוד', en: 'Scoring' },
+  rulesScore: {
+    he: 'בכל פעם שמישהו נפסל, כל מי שעדיין במשחק מקבל נקודה, כך שמי שנשאר אחרון צובר הכי הרבה. התנגשות ראש בראש פוסלת את שניהם. אם השניים האחרונים נפסלים יחד, אף אחד מהם לא מקבל את הנקודה.',
+    en: 'Each time someone is knocked out, everyone still in gets a point, so whoever lasts longest gathers the most. A head-on crash knocks out both. If the last two go out together, neither gets the point.',
+  },
+  rulesWin: {
+    he: 'המשחק נגמר כשמישהו מגיע ליעד הנקודות. כש"ניצחון בהפרש 2" פעיל צריך גם להוביל בשתי נקודות, אחרת ממשיכים. היעד גדל לפי מספר המשתתפים, כך שמשחק נמשך בערך אותו זמן עם 2 שחקנים או עם 6.',
+    en: 'The match ends when someone reaches the target. With "Win by 2" on, they also need a two-point lead, or play goes on. The target grows with the number of players, so a match takes about as long with 2 as with 6.',
+  },
+  rulesPowerTitle: { he: 'בונוסים', en: 'Power-ups' },
+  rulesPower: {
+    he: 'עוברים דרך עיגול כדי לאסוף אותו. צבע הטבעת אומר על מי הוא משפיע: ירוק עליך, אדום על היריבים, כחול על כולם. טבעת סביב הראש מראה כמה זמן נשאר לאפקט. איסוף של אותו אפקט שוב מתחיל את הזמן מחדש.',
+    en: 'Drive through a circle to pick it up. Its ring shows who it affects: green you, red your rivals, blue everyone. A ring around a head shows how long an effect has left. Picking up the same effect again restarts its time.',
+  },
+  seconds: (n) => ({ he: `${n} שניות`, en: `${n} s` }),
+  pu_fast: { he: 'טורבו', en: 'Turbo' },
+  pu_fast_what: { he: 'אתה נוסע מהר יותר.', en: 'You go faster.' },
+  pu_slow: { he: 'האטה', en: 'Slow' },
+  pu_slow_what: {
+    he: 'אתה נוסע לאט יותר, וקל יותר להתחמק.',
+    en: 'You go slower, which makes dodging easier.',
+  },
+  pu_thin: { he: 'קו דק', en: 'Thin line' },
+  pu_thin_what: {
+    he: 'הקו שלך דק יותר, וקל לעבור במקומות צרים.',
+    en: 'Your line is thinner and slips through tight spots.',
+  },
+  pu_ghost: { he: 'רוח רפאים', en: 'Ghost' },
+  pu_ghost_what: {
+    he: 'לא משאיר שובל ועובר דרך שובלים. הקירות עדיין פוסלים.',
+    en: 'You leave no trail and pass through trails. Walls still knock you out.',
+  },
+  pu_fastOthers: { he: 'טורבו ליריבים', en: 'Turbo for rivals' },
+  pu_fastOthers_what: { he: 'כל היריבים נוסעים מהר יותר.', en: 'All your rivals go faster.' },
+  pu_thickOthers: { he: 'קו עבה ליריבים', en: 'Thick line for rivals' },
+  pu_thickOthers_what: { he: 'הקווים של היריבים מתעבים.', en: 'Your rivals’ lines get thicker.' },
+  pu_reverseOthers: { he: 'היפוך מקשים', en: 'Reversed keys' },
+  pu_reverseOthers_what: {
+    he: 'אצל היריבים שמאלה וימינה מתחלפים.',
+    en: 'Left and right swap for your rivals.',
+  },
+  pu_clear: { he: 'ניקוי', en: 'Clear' },
+  pu_clear_what: { he: 'כל השובלים נמחקים מהזירה.', en: 'Every trail is wiped off the arena.' },
+  pu_wrap: { he: 'קירות פתוחים', en: 'Open walls' },
+  pu_wrap_what: {
+    he: 'יוצאים מצד אחד ונכנסים מהצד השני. מסגרת מקווקוות מראה שזה פעיל.',
+    en: 'Leave one side and come back on the other. A dashed border shows it is on.',
+  },
+  rulesOnlineTitle: { he: 'אונליין', en: 'Online' },
+  rulesOnline: {
+    he: 'השרת הוא השופט: הוא מחליט מי נפסל ומתי. אם החיבור נופל, המקום שלך נשמר והמשחק מחזיר אותך אליו. אם מישהו עוזב באמצע, המארח קובע מה קורה: בוט ממשיך את הקו שלו, או שהקו יוצא מהמשחק.',
+    en: 'The server is the referee: it decides who is out and when. If your connection drops, your seat is kept and the game takes you back to it. If someone leaves mid-match, the host decides: a bot plays their line on, or the line leaves the game.',
   },
   modeOff: { he: 'כבוי', en: 'Off' },
   modeHuman: { he: 'שחקן', en: 'Player' },

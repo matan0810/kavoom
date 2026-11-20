@@ -4,7 +4,7 @@ import { VERSION } from '../../../shared/config.js';
 import { useSettings } from '../../state/SettingsContext.jsx';
 import { Segmented } from '../ui/Segmented.jsx';
 
-export function TopBar({ onOpenSettings }) {
+export function TopBar({ onOpenSettings, onOpenRules }) {
   const { settings, update, t } = useSettings();
   return (
     <nav className="bar">
@@ -26,6 +26,15 @@ export function TopBar({ onOpenSettings }) {
         <span className="version" dir="ltr">
           v{VERSION}
         </span>
+        <button
+          type="button"
+          className="btn icon help"
+          aria-label={t('helpButton')}
+          title={t('helpButton')}
+          onClick={onOpenRules}
+        >
+          ?
+        </button>
         <button type="button" className="btn" onClick={onOpenSettings}>
           {t('moreSettings')}
         </button>

@@ -354,3 +354,58 @@ input[type='range'] {
     min-height: 50px;
   }
 }
+
+/* ---------- Rules ---------- */
+.card.wide {
+  width: min(600px, 100%);
+}
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  text-align: start;
+}
+.rules-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rules h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.125rem;
+  color: var(--text);
+}
+.rules p {
+  color: var(--muted);
+}
+.rules-powerups {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.rules-powerups li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+.rules-powerups strong {
+  color: var(--text);
+  font-weight: 700;
+}
+.pu-icon {
+  width: 36px;
+  height: 36px;
+}
+.bar .help {
+  font-family: var(--display);
+  font-size: 1.25rem;
+}

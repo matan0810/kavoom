@@ -5,7 +5,15 @@
 import { useEffect, useRef } from 'react';
 import { useBackLayer } from '../../hooks/useBackLayer.js';
 
-export function Dialog({ title, text, actions, onClose, escCloses = true, children }) {
+export function Dialog({
+  title,
+  text,
+  actions,
+  onClose,
+  escCloses = true,
+  className = '',
+  children,
+}) {
   const card = useRef(null);
   const row = useRef(null);
   useBackLayer(true, onClose);
@@ -14,7 +22,7 @@ export function Dialog({ title, text, actions, onClose, escCloses = true, childr
   // focus back to whatever had it when the dialog closes.
   useEffect(() => {
     const before = document.activeElement;
-    row.current?.querySelector('button')?.focus();
+    row.current?.querySelector('button')?.focus({ preventScroll: true }); // a long dialog opens at its top
     return () => {
       if (before instanceof HTMLElement && before.isConnected) before.focus();
     };
@@ -42,7 +50,13 @@ export function Dialog({ title, text, actions, onClose, escCloses = true, childr
 
   return (
     <div className="overlay">
-      <div className="card" ref={card} role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        className={`card ${className}`}
+        ref={card}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <h2>{title}</h2>
         {text && <p>{text}</p>}
         {children}

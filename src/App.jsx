@@ -12,6 +12,7 @@ import { useSettings } from './state/SettingsContext.jsx';
 import { MenuScreen } from './components/menu/MenuScreen.jsx';
 import { GameScreen } from './components/game/GameScreen.jsx';
 import { SettingsDialog } from './components/SettingsDialog.jsx';
+import { RulesDialog } from './components/RulesDialog.jsx';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -20,6 +21,7 @@ export function App() {
   const ui = useGameUi();
   const stats = useStats();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const inGame = ui.state !== 'idle';
 
   // Who this player is online.
@@ -33,7 +35,10 @@ export function App() {
 
   // The menu's settings dialog does not follow the player into a match.
   useEffect(() => {
-    if (inGame) setSettingsOpen(false);
+    if (inGame) {
+      setSettingsOpen(false);
+      setRulesOpen(false);
+    }
   }, [inGame]);
 
   // Back in a room's lobby leaves the room, like the Leave button.
@@ -72,8 +77,10 @@ export function App() {
         stats={stats}
         onStartLocal={startLocal}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenRules={() => setRulesOpen(true)}
       />
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {rulesOpen && <RulesDialog onClose={() => setRulesOpen(false)} />}
     </>
   );
 }

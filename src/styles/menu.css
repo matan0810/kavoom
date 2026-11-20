@@ -214,22 +214,6 @@ button.dot:hover {
   }
 }
 
-.how summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-weight: 500;
-  padding-block: 6px;
-}
-.howto {
-  margin: 8px 0 0;
-  padding-inline-start: 1.1em;
-  color: var(--muted);
-  font-size: 0.9375rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 /* The player's record: a quiet last line under everything else. */
 .record {
   text-align: center;

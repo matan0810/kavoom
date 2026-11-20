@@ -15,8 +15,8 @@ import { GameDialogs } from './GameDialogs.jsx';
 
 export function GameScreen({ ui, online }) {
   const { settings } = useSettings();
-  const [dialog, setDialog] = useState(null); // null | 'pause' | 'quit' | 'settings'
-  const [beforeSettings, setBeforeSettings] = useState(null); // what to return to when settings close
+  const [dialog, setDialog] = useState(null); // null | 'pause' | 'quit' | 'settings' | 'rules'
+  const [beforeSide, setBeforeSide] = useState(null); // what to return to when settings or rules close
   const local = ui.mode === 'local';
 
   const coarse = useMediaQuery('(pointer: coarse)');
@@ -42,15 +42,18 @@ export function GameScreen({ ui, online }) {
   };
   const leave = () => (local ? game.stop() : online.leave());
   const openMenu = () => (local ? pause() : askQuit());
-  const openSettings = () => {
-    setBeforeSettings({ dialog, wasPaused: game.paused });
+  // Settings and rules open over whatever was showing, and go back to it on close.
+  const openSide = (kind) => {
+    setBeforeSide({ dialog, wasPaused: game.paused });
     game.pause();
-    setDialog('settings');
+    setDialog(kind);
   };
-  const closeSettings = () => {
-    if (!beforeSettings.dialog && !beforeSettings.wasPaused) game.resume();
-    setDialog(beforeSettings.dialog);
+  const closeSide = () => {
+    if (!beforeSide.dialog && !beforeSide.wasPaused) game.resume();
+    setDialog(beforeSide.dialog);
   };
+  const openSettings = () => openSide('settings');
+  const side = dialog === 'settings' || dialog === 'rules';
 
   // ---------- Back button, keys, tab switching ----------
 
@@ -66,7 +69,7 @@ export function GameScreen({ ui, online }) {
       const typing = e.target instanceof HTMLInputElement;
       if (e.code === 'Space' && !typing) {
         e.preventDefault();
-        if (e.repeat || !local || dialog === 'settings') return;
+        if (e.repeat || !local || side) return;
         if (game.paused) resume();
         else if (game.state === 'roundEnd') game.startRound();
         else if (game.state === 'matchEnd') game.rematch();
@@ -90,7 +93,7 @@ export function GameScreen({ ui, online }) {
 
   // A pause or quit dialog has no business staying open once the match is over.
   useEffect(() => {
-    if (ui.state === 'matchEnd') setDialog((d) => (d === 'settings' ? d : null));
+    if (ui.state === 'matchEnd') setDialog((d) => (d === 'settings' || d === 'rules' ? d : null));
   }, [ui.state]);
 
   useWakeLock();
@@ -126,7 +129,8 @@ export function GameScreen({ ui, online }) {
         withSettings={compact}
         onResume={resume}
         onSettings={openSettings}
-        onCloseSettings={closeSettings}
+        onRules={() => openSide('rules')}
+        onCloseSide={closeSide}
         onLeave={leave}
       />
     </section>

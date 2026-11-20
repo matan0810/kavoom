@@ -5,6 +5,7 @@ import { game } from '../../engine/index.js';
 import { useT } from '../../state/SettingsContext.jsx';
 import { Dialog } from '../ui/Dialog.jsx';
 import { SettingsDialog } from '../SettingsDialog.jsx';
+import { RulesDialog } from '../RulesDialog.jsx';
 import { Scoreboard } from './Scoreboard.jsx';
 
 function MatchEnd({ ui, online }) {
@@ -48,14 +49,17 @@ export function GameDialogs({
   withSettings,
   onResume,
   onSettings,
-  onCloseSettings,
+  onRules,
+  onCloseSide,
   onLeave,
 }) {
   const t = useT();
   const local = ui.mode === 'local';
   const settingsAction = { label: t('moreSettings'), onClick: onSettings };
+  const rulesAction = { label: t('howTitle'), onClick: onRules };
 
-  if (dialog === 'settings') return <SettingsDialog onClose={onCloseSettings} />;
+  if (dialog === 'settings') return <SettingsDialog onClose={onCloseSide} />;
+  if (dialog === 'rules') return <RulesDialog onClose={onCloseSide} />;
   if (ui.state === 'matchEnd') return <MatchEnd ui={ui} online={online} />;
 
   if (dialog === 'pause') {
@@ -67,6 +71,7 @@ export function GameDialogs({
         actions={[
           { label: t('resume'), onClick: onResume, primary: true },
           settingsAction,
+          rulesAction,
           { label: t('mainMenu'), onClick: onLeave },
         ]}
       />
@@ -87,7 +92,7 @@ export function GameDialogs({
         onClose={onResume}
         actions={[
           { label: t('keepPlaying'), onClick: onResume, primary: true },
-          ...(withSettings ? [settingsAction] : []),
+          ...(withSettings ? [settingsAction, rulesAction] : []),
           { label: t(local ? 'quitYes' : 'leaveYes'), onClick: onLeave },
         ]}
       />

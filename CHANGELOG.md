@@ -7,6 +7,9 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Added
+- A How to play dialog explains the rules in full: the aim, steering, gaps, scoring and winning, every power-up with its icon and duration, and online play. It opens from the ? button in the menu bar and from the game menu, and replaces the short list under the settings.
+
 ## [1.5.0] - 2026-11-19
 
 ### Added

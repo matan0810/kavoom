@@ -226,8 +226,8 @@ Touch:
 
 - One dark look on purpose: ink-blue ground, an arena with a faint dot grid, and twelve
   saturated, distinct player colours. Display face Secular One, body face Heebo.
-- Menu: a live bot demo on top, a bar with mode (one device / online), version, sound
-  and display settings, and language. Below it, players on one side and settings on the other.
+- Menu: a live bot demo on top, a bar with mode (one device / online), version, a "?" for
+  the rules, sound and display settings, and language. Below it, players on one side and settings on the other.
 - Game: the scoreboard beside the arena, updated on every knockout. On small screens and
   touch devices it is one strip above the arena with a single menu button, which opens the
   game menu (resume, sound and display, leave).
@@ -241,6 +241,10 @@ Touch:
   colour swaps with its owner; online it is blocked.
 - Language: Hebrew for browsers that prefer Hebrew or clocks set to Israel, English
   otherwise. A choice made in the menu is remembered.
+- How to play: one dialog with the aim, steering, gaps, scoring and winning, every power-up
+  with its arena icon (drawn by the renderer itself) and its duration from `POWERUPS`, and
+  online play. It opens from the "?" in the menu bar and from the game menu (pause, or the
+  online menu on small screens), and returns to that menu when closed.
 - Settings are stored in `localStorage` inside try/catch, and the game works without it.
 - Record: matches, wins and winning streaks are kept in `localStorage` and shown as one line
   under the menu. A match counts when the device has one clear player: any online match, or a
@@ -350,6 +354,8 @@ Nobody can cheat from the browser, and everyone sees the same game.
 - Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode.
 - Layout and renderer: when the arena turns upright, and that the turn is a pure rotation.
 - Settings: bad saved values are replaced or clamped, language detection.
+- Texts (`tests/i18n.test.js`): every `t('key')` in the code and every power-up has a Hebrew
+  and an English text.
 - Version: `shared/config.js` matches `package.json`.
 
 `npm run e2e` is a browser smoke test (Playwright, Chromium): desktop and phone, Hebrew and

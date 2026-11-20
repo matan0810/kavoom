@@ -65,15 +65,6 @@ export function LocalPane({ onStart }) {
             })
           }
         />
-        <details className="how">
-          <summary>{t('howTitle')}</summary>
-          <ul className="howto">
-            <li>{t('how1')}</li>
-            <li>{t('how2')}</li>
-            <li>{t('how3')}</li>
-            <li>{t('how4')}</li>
-          </ul>
-        </details>
       </section>
 
       <div className="start-bar">

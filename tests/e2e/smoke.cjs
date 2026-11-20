@@ -108,6 +108,22 @@ async function main() {
   assert.ok(await phone.$('.menu'));
   step('menu: Back closes the settings dialog');
 
+  // The rules open from the "?" in the menu bar, start at the top, and close with Back.
+  await phone.click('.bar .help');
+  await settle(phone);
+  assert.equal(await text(phone, '.card h2'), 'איך משחקים');
+  assert.equal(await phone.$$eval('.rules-powerups li', (n) => n.length), 9, 'all nine power-ups');
+  assert.equal(await phone.evaluate(() => document.querySelector('.overlay').scrollTop), 0);
+  const drawn = await phone.$eval('.pu-icon', (c) => {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    return d.some((v, i) => i % 4 === 3 && v > 0);
+  });
+  assert.ok(drawn, 'the power-up icons are drawn');
+  await phone.goBack();
+  await settle(phone);
+  assert.equal(await phone.$('.card'), null);
+  step('menu: the rules open from the ? button and close with Back');
+
   // Colour picker and a second human on the phone.
   await phone.click('.slot:nth-child(2) .seg button:nth-child(2)');
   await phone.click('.start-bar .btn');
@@ -181,6 +197,15 @@ async function main() {
     await d.keyboard.press('Escape');
     await settle(d, 250);
     assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true, 'Esc pauses');
+    // The game menu offers the rules too, and closing them goes back to the menu.
+    await d.click(`.overlay-actions .btn:nth-child(3)`);
+    await settle(d, 250);
+    assert.equal(await d.$$eval('.rules-powerups li', (n) => n.length), 9);
+    await d.click('.overlay-actions .btn.primary'); // close
+    await settle(d, 250);
+    assert.equal(await d.$('.rules'), null);
+    assert.ok(await d.$('.card'), 'back on the pause menu');
+    assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true, 'still paused');
     step(`desktop ${locale}: rail, Space and Esc`);
     if (locale === 'en-US') {
       // Match rules: a typed target and no win-by-2, shown in the hint and in the game.

@@ -6,12 +6,12 @@ import { TopBar } from './TopBar.jsx';
 import { LocalPane } from './LocalPane.jsx';
 import { OnlinePane } from './OnlinePane.jsx';
 
-export function MenuScreen({ online, identity, stats, onStartLocal, onOpenSettings }) {
+export function MenuScreen({ online, identity, stats, onStartLocal, onOpenSettings, onOpenRules }) {
   const { settings, t } = useSettings();
   return (
     <main className="screen menu">
       <Hero />
-      <TopBar onOpenSettings={onOpenSettings} />
+      <TopBar onOpenSettings={onOpenSettings} onOpenRules={onOpenRules} />
       {settings.tab === 'local' ? (
         <LocalPane onStart={onStartLocal} />
       ) : (

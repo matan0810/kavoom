@@ -55,15 +55,15 @@ export const POWERUP_MAX = 4;
 
 // target: who is affected. fx: which timed effect is set on them.
 export const POWERUPS = [
-  { id: 'fast', target: 'self', fx: 'fast', dur: 5, weight: 3, label: 'טורבו' },
-  { id: 'slow', target: 'self', fx: 'slow', dur: 6, weight: 3, label: 'האטה' },
-  { id: 'thin', target: 'self', fx: 'thin', dur: 8, weight: 3, label: 'קו דק' },
-  { id: 'ghost', target: 'self', fx: 'ghost', dur: 3.5, weight: 2, label: 'רוח רפאים' },
-  { id: 'fastOthers', target: 'others', fx: 'fast', dur: 4, weight: 3, label: 'טורבו ליריבים' },
-  { id: 'thickOthers', target: 'others', fx: 'thick', dur: 7, weight: 3, label: 'קו עבה ליריבים' },
-  { id: 'reverseOthers', target: 'others', fx: 'reverse', dur: 5, weight: 2, label: 'היפוך מקשים' },
-  { id: 'clear', target: 'all', fx: null, dur: 0, weight: 2, label: 'ניקוי' },
-  { id: 'wrap', target: 'all', fx: 'wrap', dur: 8, weight: 2, label: 'קירות פתוחים' },
+  { id: 'fast', target: 'self', fx: 'fast', dur: 5, weight: 3 },
+  { id: 'slow', target: 'self', fx: 'slow', dur: 6, weight: 3 },
+  { id: 'thin', target: 'self', fx: 'thin', dur: 8, weight: 3 },
+  { id: 'ghost', target: 'self', fx: 'ghost', dur: 3.5, weight: 2 },
+  { id: 'fastOthers', target: 'others', fx: 'fast', dur: 4, weight: 3 },
+  { id: 'thickOthers', target: 'others', fx: 'thick', dur: 7, weight: 3 },
+  { id: 'reverseOthers', target: 'others', fx: 'reverse', dur: 5, weight: 2 },
+  { id: 'clear', target: 'all', fx: null, dur: 0, weight: 2 },
+  { id: 'wrap', target: 'all', fx: 'wrap', dur: 8, weight: 2 },
 ];
 
 export const FX_MULT = { fast: 1.6, slow: 0.6, thin: 0.5, thick: 2 };

@@ -1,7 +1,6 @@
-# Every push to main is a release. All checks run first; only if they pass, and
-# package.json holds a version that has no tag yet, the commit is tagged and a
-# GitHub release is published with the matching CHANGELOG.md section.
-# Render deploys main on its own (see render.yaml).
+# Every push to main runs all checks. Render deploys main only after the checks on the
+# commit pass (its Auto-Deploy setting "After CI Checks Pass"), so a failing check keeps
+# the live site as it is. Tagging happens later, in tag.yml, once the new version is live.
 name: Release
 
 on:
@@ -14,30 +13,3 @@ permissions:
 jobs:
   checks:
     uses: ./.github/workflows/checks.yml
-
-  release:
-    name: Tag and publish
-    needs: checks
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - name: Tag and publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          version="$(node -p "require('./package.json').version")"
-          tag="v$version"
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "$tag is already released"
-            exit 0
-          fi
-          node scripts/release-notes.mjs "$version" > notes.md
-          gh release create "$tag" --target "$GITHUB_SHA" --title "KAVOOM $tag" --notes-file notes.md

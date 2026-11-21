@@ -1,0 +1,67 @@
+# Tags a release once it is live, and publishes it with its CHANGELOG.md section.
+#
+# Render deploys main by itself, so this workflow asks the live site which version it runs
+# and tags the "Release vX.Y.Z" commit only when that version is the one being served. It
+# runs on a schedule rather than on the push: a run attached to main's commit would be a
+# check Render waits for, while this one waits for Render. It contacts the site only when
+# main's version has no release yet, so it never wakes a sleeping server for nothing.
+# Start it by hand from the Actions tab to tag at once.
+name: Tag
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      LIVE_URL: https://kavoom.onrender.com
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Tag and publish what is live and missing
+        run: |
+          # Every value below is checked to be a plain version or commit before any shell sees it.
+          version="$(node -p "const v = require('./package.json').version; /^\d+\.\d+\.\d+$/.test(v) ? v : ''")"
+          if [ -z "$version" ]; then echo "::error::package.json has no plain version"; exit 1; fi
+          if gh release view "v$version" > /dev/null 2>&1; then
+            echo "v$version is already released"
+            exit 0
+          fi
+          live="$(curl -fsS --max-time 120 "$LIVE_URL/version" | node -e "
+            let s = ''; process.stdin.on('data', (d) => (s += d)).on('end', () => {
+              try { const v = JSON.parse(s).version; console.log(/^\d+\.\d+\.\d+$/.test(v) ? v : ''); }
+              catch { console.log(''); }
+            });" || true)"
+          if [ "$live" != "$version" ]; then
+            echo "v$version is not live yet (the site runs ${live:-an unknown version}); trying again later"
+            exit 0
+          fi
+          commit="$(git log origin/main --format=%H --grep="^Release v$version\$" -n 1)"
+          if [ -z "$commit" ]; then echo "::error::No \"Release v$version\" commit on main"; exit 1; fi
+          node scripts/release-plan.mjs "$commit" "$RUNNER_TEMP/notes" > plan.tsv
+          while IFS=$'\t' read -r tag target title notes latest; do
+            if gh release view "$tag" > /dev/null 2>&1; then continue; fi
+            gh release create "$tag" --target "$target" --title "$title" \
+              --notes-file "$notes" --latest="$latest"
+            echo "Released $tag at ${target:0:7}" | tee -a "$GITHUB_STEP_SUMMARY"
+          done < plan.tsv

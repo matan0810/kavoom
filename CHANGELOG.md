@@ -7,6 +7,9 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Changed
+- GitHub releases are now tagged only once the live site serves the new version: a Tag workflow checks every half hour (or when started by hand from the Actions tab) and creates any release that is missing.
+
 ## [1.6.0] - 2026-11-20
 
 ### Added

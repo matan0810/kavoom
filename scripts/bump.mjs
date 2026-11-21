@@ -1,52 +1,34 @@
-// Prepares a release on the dev branch:
+// Prepares a release: bumps the version in package.json and package-lock.json (the only
+// places it lives) and turns the Unreleased notes in CHANGELOG.md into a section dated today.
+//
 //   npm run bump -- patch|minor|major
-// Updates package.json, package-lock.json and shared/config.js, and turns the
-// "Unreleased" section of CHANGELOG.md into the new version's section.
 
 import { readFile, writeFile } from 'node:fs/promises';
+import { BUMPS, applyRelease, nextVersion } from './changelog.mjs';
 
-const kind = process.argv[2];
-if (!['patch', 'minor', 'major'].includes(kind)) {
-  console.error('Usage: npm run bump -- patch|minor|major');
+const bump = process.argv[2];
+if (!BUMPS.includes(bump)) {
+  console.error(`Usage: npm run bump -- ${BUMPS.join('|')}`);
   process.exit(1);
 }
 
-const read = (f) => readFile(new URL(`../${f}`, import.meta.url), 'utf8');
-const write = (f, s) => writeFile(new URL(`../${f}`, import.meta.url), s);
+const root = new URL('../', import.meta.url);
+const readJson = async (file) => JSON.parse(await readFile(new URL(file, root), 'utf8'));
+const writeJson = (file, data) =>
+  writeFile(new URL(file, root), `${JSON.stringify(data, null, 2)}\n`);
 
-const pkg = JSON.parse(await read('package.json'));
-const [maj, min, pat] = pkg.version.split('.').map(Number);
-const next =
-  kind === 'major'
-    ? `${maj + 1}.0.0`
-    : kind === 'minor'
-      ? `${maj}.${min + 1}.0`
-      : `${maj}.${min}.${pat + 1}`;
+const pkg = await readJson('package.json');
+const version = nextVersion(pkg.version, bump);
+const today = new Date().toISOString().slice(0, 10);
+const changelogUrl = new URL('CHANGELOG.md', root);
+const changelog = applyRelease(await readFile(changelogUrl, 'utf8'), version, today);
 
-const log = await read('CHANGELOG.md');
-const unreleased = /## \[Unreleased\]\n([\s\S]*?)(?=\n## \[|$)/.exec(log);
-if (!unreleased || !unreleased[1].trim()) {
-  console.error('CHANGELOG.md has nothing under "## [Unreleased]". Describe the changes first.');
-  process.exit(1);
-}
-const date = new Date().toISOString().slice(0, 10);
-await write(
-  'CHANGELOG.md',
-  log.replace('## [Unreleased]\n', `## [Unreleased]\n\n## [${next}] - ${date}\n`),
-);
+const lock = await readJson('package-lock.json');
+lock.version = version;
+lock.packages[''].version = version;
+pkg.version = version;
 
-pkg.version = next;
-await write('package.json', JSON.stringify(pkg, null, 2) + '\n');
-
-const lock = JSON.parse(await read('package-lock.json'));
-lock.version = next;
-if (lock.packages && lock.packages['']) lock.packages[''].version = next;
-await write('package-lock.json', JSON.stringify(lock, null, 2) + '\n');
-
-const config = await read('shared/config.js');
-await write(
-  'shared/config.js',
-  config.replace(/export const VERSION = '[^']*';/, `export const VERSION = '${next}';`),
-);
-
-console.log(`Version ${next} is ready. Commit it as "Release v${next}" and merge dev into main.`);
+await writeFile(changelogUrl, changelog);
+await writeJson('package.json', pkg);
+await writeJson('package-lock.json', lock);
+console.log(`Version ${version}, dated ${today}. Commit it as "Release v${version}".`);

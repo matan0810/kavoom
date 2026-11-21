@@ -1,9 +1,10 @@
-# Day-to-day work: every push to dev, and every pull request, runs all checks.
+# Day-to-day work: every push to dev (and to any working branch), and every pull request,
+# runs all checks. main runs the same checks in release.yml.
 name: CI
 
 on:
   push:
-    branches: [dev]
+    branches-ignore: [main]
   pull_request:
     branches: [dev, main]
 

@@ -1,5 +1,5 @@
-# Every check a commit must pass. Used by ci.yml (dev) and release.yml (main),
-# so a release runs exactly what day-to-day work runs.
+# Every check a commit must pass. Used by ci.yml (branches and pull requests) and
+# release.yml (main), so a release runs exactly what day-to-day work runs.
 name: Checks
 
 on:
@@ -14,22 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Known vulnerabilities in dependencies
-        run: npm audit --audit-level=high
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm test
+      # Only what ships to players blocks: react, react-dom, ws and the fonts.
+      - name: Known vulnerabilities in the game's dependencies
+        run: npm audit --omit=dev --audit-level=high
+      # Build and test tools never reach players, and an advisory can land before a fix
+      # exists. Report them on every run so they are seen and updated, without blocking.
+      - name: Known vulnerabilities in build and test tools (report only)
+        run: npm audit --audit-level=high || echo "::warning::Advisories in dev dependencies; see the log above."
+      - run: npm run check
 
   browser:
     name: Browser tests (desktop, phone, online, offline)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -47,6 +54,8 @@ jobs:
       NODE_ENV: production
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc

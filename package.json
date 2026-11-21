@@ -9,13 +9,13 @@
     "dev": "vite",
     "build": "vite build",
     "start": "node server/server.js",
-    "pretest": "vite build --logLevel warn",
-    "test": "node --test tests/*.test.js",
-    "bump": "node scripts/bump.mjs",
-    "e2e": "node tests/e2e/smoke.cjs",
+    "check": "npm run lint && npm run format:check && npm test",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test": "vite build --logLevel warn && node --test tests/*.test.js",
+    "e2e": "node tests/e2e/smoke.cjs",
+    "bump": "node scripts/bump.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

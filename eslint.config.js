@@ -26,7 +26,7 @@ export default [
     ...react.configs.flat.recommended,
     languageOptions: {
       ...react.configs.flat.recommended.languageOptions,
-      globals: globals.browser,
+      globals: { ...globals.browser, __APP_VERSION__: 'readonly' }, // set by vite.config.js
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     settings: { react: { version: 'detect' } },

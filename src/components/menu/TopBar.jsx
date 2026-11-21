@@ -1,6 +1,5 @@
 // The slim bar under the hero: play mode, version, sound and display, language.
 
-import { VERSION } from '../../../shared/config.js';
 import { useSettings } from '../../state/SettingsContext.jsx';
 import { Segmented } from '../ui/Segmented.jsx';
 
@@ -24,7 +23,7 @@ export function TopBar({ onOpenSettings, onOpenRules }) {
       />
       <div className="bar-end">
         <span className="version" dir="ltr">
-          v{VERSION}
+          v{__APP_VERSION__}
         </span>
         <button
           type="button"

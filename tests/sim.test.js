@@ -267,13 +267,6 @@ test('bot rounds always finish with a consistent result', () => {
   }
 });
 
-test('the game version matches package.json', async () => {
-  const { VERSION } = await import('../shared/config.js');
-  const { readFile } = await import('node:fs/promises');
-  const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.equal(VERSION, pkg.version);
-});
-
 test('without win by 2, the first to the target wins; level at the top still plays on', () => {
   const m = new Match(3, 10, 1);
   m.applyRound([9, 9, 0]);

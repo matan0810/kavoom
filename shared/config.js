@@ -1,6 +1,3 @@
-// Game version. Kept equal to package.json by a test; bumped only on release.
-export const VERSION = '1.6.0';
-
 // Shared constants. Everything here is plain data so the simulation can run in Node.
 
 export const ARENA = { w: 1120, h: 720 };

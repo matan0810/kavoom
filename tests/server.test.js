@@ -320,3 +320,13 @@ test('while people play, the game loop health is logged with counts only', () =>
     assert.ok(!logged.some((l) => l.includes('Secret Name')), 'no player data in the log');
   }));
 const logged = [];
+
+test('the server reports the version from package.json, never cached', () =>
+  withServer(async (port) => {
+    const { readFile } = await import('node:fs/promises');
+    const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+    const res = await get(port, '/version');
+    assert.equal(res.status, 200);
+    assert.deepEqual(JSON.parse(res.body), { version: pkg.version });
+    assert.equal(res.headers['cache-control'], 'no-store');
+  }));

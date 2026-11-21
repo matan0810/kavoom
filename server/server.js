@@ -7,7 +7,7 @@
 //                     (only needed when the static site is hosted somewhere else)
 
 import http from 'node:http';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -15,6 +15,11 @@ import { WebSocketServer } from 'ws';
 import { Room, SEAT_GRACE } from './room.js';
 
 // The browser files are built by Vite into dist/ (npm run build).
+// The version lives in package.json only (CLAUDE.md, section 1).
+const { version: VERSION } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+);
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const TICK_MS = 1000 / 60;
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -166,6 +171,13 @@ export function startServer({
       if (req.method !== 'GET' && req.method !== 'HEAD') return res.writeHead(405, headers).end();
       const urlPath = (req.url || '/').split('?')[0];
       if (urlPath === '/healthz') return res.writeHead(200, headers).end('ok');
+      // The running version, for the workflow that tags a release once it is live.
+      if (urlPath === '/version') {
+        const type = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+        return res
+          .writeHead(200, { ...headers, ...type })
+          .end(JSON.stringify({ version: VERSION }));
+      }
       const { file, status } = publicPath(urlPath);
       if (!file)
         return res.writeHead(status, headers).end(status === 400 ? 'Bad request' : 'Not found');

@@ -14,9 +14,8 @@ Requires Node 22 or later.
 npm install
 npm run build      # React app -> dist/
 npm start          # http://localhost:8080
-npm run lint       # ESLint
-npm run format     # Prettier
-npm test           # builds, then runs every test
+npm run check      # lint, format and every unit test (builds the site first)
+npm run format     # Prettier rewrites the files
 npm run e2e        # browser smoke test; needs a prior build
 ```
 
@@ -31,23 +30,23 @@ While working on the page, `npm run dev` gives instant reload on http://localhos
 | Branch | Role |
 | --- | --- |
 | `dev` | Day-to-day work. Lint, unit tests, browser tests and a production build run on every push. |
-| `main` | What is live. Every push here is a release. |
+| `main` | What is live. Render deploys it once the checks on the commit pass. |
 
-To release:
+How work and releases are done is in [CLAUDE.md](CLAUDE.md): `npm run bump`, a
+`Release vX.Y.Z` commit, a fast-forward of `main`, and the Tag workflow publishing the
+GitHub release once https://kavoom.onrender.com/version serves the new version. The version
+lives in `package.json` and is shown in the game menu.
 
-1. On `dev`: `npm run bump -- minor` (`patch` for fixes, `major` for breaking changes).
-2. Commit as `Release vX.Y.Z`, then merge `dev` into `main`.
-3. GitHub tags the commit and publishes a release from `CHANGELOG.md`, and Render
-   deploys it within a minute or two.
-
-The version number is shown in the game menu.
+**Open work and ideas** are the repository's
+[open issues](https://github.com/matan0810/kavoom/issues).
 
 ## Deploy (Render, free)
 
 `render.yaml` defines one free web service in the Frankfurt region.
 
 1. On render.com: New → Blueprint, pick this repository, Apply.
-2. Render follows `main` and deploys every release on its own.
+2. Render follows `main`. In the service's settings, set Auto-Deploy to "After CI Checks
+   Pass", so a commit whose checks fail is never deployed.
 
 The build command is `npm ci --include=dev && npm run build`. If the service was created by
 hand rather than from the Blueprint, set that build command in its settings.
@@ -57,7 +56,7 @@ create it again from the Blueprint.
 
 On the free plan the server sleeps after 15 minutes without traffic, and the first visit
 after that takes about a minute. If the static site is hosted somewhere else, set the
-server address in `SERVER_URL` in `shared/config.js` and the site's origin in the server's
+server address in `SERVER_URL` in `shared/config.js` (and add its host to the content policy) and the site's origin in the server's
 `ALLOWED_ORIGINS` environment variable.
 
 ## Keys (one device)
@@ -78,11 +77,13 @@ on phones.
 
 - [DESIGN.md](DESIGN.md): full game design
 - [CHANGELOG.md](CHANGELOG.md): what changed in each version
-- [SECURITY.md](SECURITY.md): what the server stores and how it is protected
+- [SECURITY.md](SECURITY.md): what is stored, which hosts, threats and their answers
+- [CLAUDE.md](CLAUDE.md): how work is done
 
 ## License
 
 [MIT](LICENSE).
 
-The Heebo and Secular One fonts come from Google Fonts under the SIL Open Font License.
+The Heebo and Secular One fonts ship with the game (`@fontsource`), under the SIL Open Font
+License.
 The ws library, React and Vite are under the MIT license.

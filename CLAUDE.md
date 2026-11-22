@@ -1,218 +1,290 @@
 # KAVOOM: working procedure
 
-KAVOOM is an original browser line game (each player leaves a trail; touching a trail
-or a wall knocks you out). Local play for 2 to 6 on one device, online rooms through a
-small Node server, bots, power-ups, Hebrew and English. Live at https://kavoom.onrender.com.
+KAVOOM (the same name in Hebrew; repository `matan0810/kavoom`) is an original browser line
+game: each player leaves a trail, and touching a trail or a wall knocks you out. Local play
+for 2 to 6 on one device, online rooms through a small Node server, bots, power-ups, Hebrew
+and English. Live at https://kavoom.onrender.com.
 
-This file is binding. Follow it on every task, in every session.
+This file is binding. Follow it on every task, in every session. Sections 1 to 12 are the
+working method from `matan0810/project-template`, the same in every project; section 13 is
+the only place for this project's own facts.
 
 ## 1. Ground rules
 
 - The owner writes in Hebrew. Answer in Hebrew.
-- Everything in the repository is in English: docs, code comments, commit messages.
-  The only Hebrew is the Hebrew UI text in `src/i18n/strings.js`.
-- Keep the UI minimal. A new feature earns a control only if it cannot be a default.
+- Everything in the repository is in English: docs, code comments, commit messages. The only
+  Hebrew is interface text and user data.
+- **Single source of truth.** Every fact lives in one place, and everywhere else links to it:
+  planned work in the issues, the version in `package.json`, changes in `CHANGELOG.md`, rules
+  and numbers in `DESIGN.md`, what is stored and which hosts are used in `SECURITY.md`. Never
+  copy one into another. Shared values in code (a constant, a shape, a colour) are defined once
+  and imported.
+- Keep it simple. A new feature earns a control only if it cannot be a default.
 - `main` is production. **Nothing reaches `main` until the owner says to release**
-  ("תעלה גרסה", "release", or the like). A request to fix or build something is not
+  ("תעלה גרסה", "תמזג", "release", or the like). A request to fix or build something is not
   a request to release it.
 - Never rewrite published history: no force push, no rebase of `dev` or `main`.
-- No model names or IDs in commits, docs or code.
+- No model names or IDs in commits, docs or code. No secrets in the repository.
 
-## 2. Branches
+## 2. Working with the owner
 
-| Branch | Role | Who writes |
-| --- | --- | --- |
-| `dev` | Integration. Every task lands here. CI runs every check on every push. | Claude |
-| `main` | Production. Every push is a release: GitHub tags it and Render deploys it. | Claude, only on a release order |
-| `dependabot/*` | Dependency updates opened against `dev`. | Dependabot |
+- **Decisions are the owner's.** Look, wording, scope and what counts as a feature: when a
+  request leaves one of these open, ask before building. Offer two to four options with a
+  recommendation, not a survey.
+- **Ideas first, then building.** When asked for ideas (features, names, statistics, a logo),
+  present a numbered list, each with what it is and why, checked against the real data where
+  that applies, and build only what the owner picks.
+- **Show, don't describe, a visual choice.** For a look decision, render the options and send
+  screenshots before touching the product.
+- **Say when you were wrong.** If a number, a claim or an earlier recommendation turns out
+  wrong, say so plainly in the report and correct it.
+- **The owner often works from a phone.** Instructions for them are steps in a browser
+  (a settings page, a workflow run), with the exact link, never terminal commands.
+- **Report** after every task, in Hebrew: what changed, how it was tested, what was not
+  tested, what the owner must do by hand, and whether it is on `dev` or live. Never call
+  something live without having checked the deploy.
+
+## 3. Branches
+
+| Branch         | Role                                                                             | Who writes                      |
+| -------------- | -------------------------------------------------------------------------------- | ------------------------------- |
+| `dev`          | Integration. Every task lands here. CI runs every check on every push.           | Claude                          |
+| `main`         | Production. Every push deploys and, with a new version, tags a release.          | Claude, only on a release order |
+| `dependabot/*` | Dependency updates.                                                              | Dependabot                      |
+| other          | A session's own working branch. Fast-forwarded into `dev`; otherwise disposable. | Claude                          |
+
+`main` is always an ancestor of `dev`: work flows `dev` → `main` by fast-forward only.
 
 Start every session with:
 
 ```
 git fetch origin dev main
-git checkout dev
+git checkout dev                 # or the session's working branch, reset to origin/dev
 git pull --ff-only origin dev
 git log --oneline -5 origin/main
+git log --oneline origin/main..origin/dev   # what is waiting for the next release
 ```
 
-If `dev` is behind `main`, stop and tell the owner; that should never happen.
+If `main` has commits that `dev` lacks, stop and tell the owner.
 
-## 3. Doing a task
+## 4. Doing a task
 
-1. **Understand.** Restate the request in one or two lines. If something is
-   genuinely the owner's decision (look, rules, scope), ask before building.
-2. **Plan.** For anything bigger than a small fix, outline the change and the files
-   it touches. Update `DESIGN.md` when a rule, number or behaviour changes.
-3. **Build** on `dev`, in small commits that each leave the tests green.
+1. **Understand.** Restate the request in one or two lines; ask if it is the owner's call
+   (section 2).
+2. **Plan.** For anything bigger than a small fix, outline the change and the files it
+   touches. Update `DESIGN.md` when a rule, number or behaviour changes.
+3. **Build** on `dev` (or a working branch based on it), in small commits that each leave
+   the checks green.
 4. **Test.** All of these, every time:
-   - `npm run lint` and `npm run format:check` pass (run `npm run format` to fix the layout).
-   - `npm test` passes.
-   - New logic gets a test: simulation in `tests/sim.test.js`, rooms in
-     `tests/room.test.js`, HTTP or WebSocket behaviour in `tests/server.test.js`.
-   - Any UI change is checked in a real browser (Playwright is preinstalled in cloud
-     sessions): run `npm run build && npm run e2e` (add to `tests/e2e/smoke.cjs` for new
-     screens or flows), and also look at screenshots: desktop 1280×800 and a 390px phone,
-     Hebrew and English, no console errors or CSP violations.
-   - Online changes are tested with two browser contexts in the same room.
-5. **Record.** Add a line under `## [Unreleased]` in `CHANGELOG.md` for every change
-   a player or the owner would notice, under Added, Changed, Fixed, Removed or Security.
-6. **Commit and push to `dev`.**
-7. **Report** to the owner in Hebrew: what changed, what was tested and how, what was
-   not tested, and anything they need to do. Say plainly that it is on `dev` and not live.
+   - `npm run check` passes (lint, format, unit tests; types once the code is TypeScript,
+     see section 13).
+   - New logic gets a unit test next to it. Logic that reads real data is tested against
+     the real data, not only against a sample.
+   - A bug fix starts with a test that fails without the fix.
+   - Any UI change is checked in a real browser: `npm run build && npm run e2e` (extend the
+     smoke test for new screens and flows), and screenshots are looked at: desktop 1280×800
+     and a 390px phone, every language, no page errors, no sideways scroll.
+   - Browser tests wait for a condition, never for a fixed time, and fail in seconds, not
+     after a long default timeout.
+5. **Record.** A line under `## [Unreleased]` in `CHANGELOG.md` for every change a user or
+   the owner would notice (Added, Changed, Fixed, Removed, Security). Update `README.md` when
+   setup, commands or layout change, `SECURITY.md` when what is stored or which hosts are
+   used changes.
+6. **Push to `dev`.** From a working branch: push it, then `git push origin HEAD:dev`
+   (a fast-forward; if `dev` moved, merge `origin/dev` first).
+7. **Check CI on `dev`**, fix it if it fails, then report (section 2).
+
+### Deferred work and ideas
+
+Postponed work and ideas are GitHub issues, not TODO comments or lists in docs: one issue
+per topic, with what was found and the options. Close it when the work ships, with the
+version.
 
 ### Definition of done
 
-Lint and format clean, tests green, browser checked when UI changed, CHANGELOG updated, DESIGN.md updated when
-behaviour changed, pushed to `dev`, CI green, owner told.
+Checks green, browser checked when the UI changed, CHANGELOG updated, pushed to `dev`, CI on
+`dev` green, owner told.
 
 ### Commits
 
-- Imperative subject under 72 characters: `Add room passwords`, `Fix wall check at high speed`.
+- Imperative subject under 72 characters: `Add room passwords`, `Fix menu on phones`.
 - A blank line and a short body when the reason is not obvious.
 - One topic per commit. Release commits are exactly `Release vX.Y.Z`.
 
-### What CI runs
+## 5. Code
 
-`.github/workflows/checks.yml`, on every push to `dev`, every pull request, and again on
-`main` before a release is tagged:
+- TypeScript in strict mode (this project is still JavaScript; see section 13). No `any`, no
+  non-null assertions, no casts of outside data: everything from outside (files, storage,
+  addresses, the network, the user) is parsed and checked, and a bad value falls back to a
+  safe default.
+- Code layout is whatever Prettier produces. Comments say why, not what.
+- Logic lives in plain modules with no UI (pure, testable); components only display.
+  One component per file, named like the file; split one that grows past about 150 lines.
+- Styles use shared design tokens and logical properties (`inline-start`, not `left`), so
+  right-to-left works without special cases.
+- Every text a user reads is in the strings file, in every language; a test checks that
+  each language has every key.
+- Accessible by default: real `<button>`s and `<a>`s, a visible label or an `aria-label`,
+  every screen has its own address (this project's exception: section 13).
+- No new runtime dependency without a reason in the commit body.
 
-| Job | What it proves |
-| --- | --- |
-| Lint, format, audit, unit tests | `npm audit` (high and up), `npm run lint`, `npm run format:check`, `npm test` |
-| Browser tests | `npm run e2e` in Chromium: desktop, phone, online with two players, offline |
-| Build and start the way Render does | `render.yaml`'s build and start commands work with `NODE_ENV=production` |
+## 6. Security baseline
 
-A release is tagged only if all three pass. A new check belongs in `checks.yml`, so `dev`
-and `main` can never drift apart.
+- Text from data or users is rendered as text, never as HTML.
+- A Content Security Policy allows only the project's own files: no inline scripts, no
+  outside hosts unless listed in `SECURITY.md` with a reason.
+- Every value from a client is checked against a closed list; every length and number is
+  capped. Every admin endpoint checks authorization first and has a test that it refuses.
+- Files a user downloads are safe: CSV cells that start like a formula are escaped; file
+  names cannot climb folders or hide their type.
+- Secrets live in the hosting platform's secret store, never in the repository.
+- Supply chain: `ignore-scripts=true` in `.npmrc`, `npm ci` from the lockfile, `npm audit`
+  blocks high advisories in runtime dependencies.
+- CI: read-only permissions by default, more only for the job that needs it; checkouts do
+  not keep the token (`persist-credentials: false`); no untrusted text in shell commands.
+- `SECURITY.md` keeps the threat model: each threat, its answer and the test that proves it,
+  plus the known limits that were accepted.
 
-## 4. Versions
+## 7. What CI runs
+
+One reusable workflow, `.github/workflows/checks.yml`, called on every push to `dev` (and
+working branches), every pull request, and again on `main` before a deploy, so `dev` and
+production can never drift apart. A new check belongs there.
+
+| Job                                 | What it proves                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------- |
+| Lint, format, audit, unit tests     | `npm audit --omit=dev --audit-level=high`, `npm run check`                 |
+| Browser tests                       | `npm run e2e`: desktop and phone, every language, online, offline          |
+| Build and start the way Render does | `render.yaml`'s build and start commands, with `NODE_ENV=production`       |
+
+## 8. Versions
 
 Semantic versioning, `MAJOR.MINOR.PATCH`:
 
-| Bump | When | Example |
-| --- | --- | --- |
-| `patch` | Fixes only, nothing new for players | a crash, a layout bug, a security fix |
-| `minor` | Anything new or changed that players notice | a new power-up, a setting, a language |
-| `major` | A break with the past | saved settings reset, online protocol incompatible with old pages |
+| Bump    | When                                              |
+| ------- | ------------------------------------------------- |
+| `patch` | Fixes only, or new data                           |
+| `minor` | Anything new or changed that users notice         |
+| `major` | A break with the past (old addresses, saved data) |
 
-The version lives in three places, kept in step by `npm run bump` and checked by a test:
-`package.json`, `package-lock.json` and `VERSION` in `shared/config.js` (shown in the menu).
+The version lives in `package.json` and `package-lock.json`, kept in step by `npm run bump`
+and checked by a test, and is shown in the interface.
 
-## 5. Releasing (only on the owner's order)
+## 9. Releasing (only on the owner's order)
 
-### Before
-- [ ] `dev` is pushed and CI on `dev` is green (check the Actions runs).
-- [ ] `## [Unreleased]` in `CHANGELOG.md` describes everything since the last release.
-      If it is empty, there is nothing to release: tell the owner.
-- [ ] Pick the bump by section 4 and tell the owner which one and why.
+A release is a push to `main` whose version has no tag yet. Once the new version is live,
+the Tag workflow tags the commit `vX.Y.Z` and publishes a GitHub release with the version's
+CHANGELOG section. Tags are created only by that workflow; never push one by hand.
 
-### Release
+**Before:** CI on `dev` is green; `## [Unreleased]` describes everything in
+`git log origin/main..origin/dev`, plus any lines marked live without a version (if it is
+empty there is nothing to release: say so); pick the bump by section 8 and tell the owner
+which one and why.
+
+**Release:**
+
 ```
-npm run bump -- patch|minor|major     # version files + CHANGELOG section with today's date
-npm test
+npm run bump -- patch|minor|major     # version files + CHANGELOG section dated today
+npm run check
 git commit -am "Release vX.Y.Z"
-git push origin dev
-git checkout main
-git merge --ff-only dev               # must fast-forward; if it cannot, stop and report
-git push origin main
-git checkout dev
+git push origin HEAD:dev              # wait for CI on dev to pass
+git push origin dev:main              # must fast-forward; if refused, stop and report
 ```
 
-### After
-- [ ] The `Release` workflow on `main` succeeded (all three check jobs, then the tag) and https://github.com/matan0810/kavoom/releases
-      shows `vX.Y.Z` with the CHANGELOG text.
-- [ ] Render has deployed. Cloud sessions cannot reach the live site, so ask the owner
-      to open it and confirm the menu shows `vX.Y.Z`.
-- [ ] Tell the owner: version, link to the release page, what is in it.
+**After:** the deploy run passed every job; the releases page shows `vX.Y.Z` as latest; the
+live interface shows `vX.Y.Z` (ask the owner if the session cannot reach it); tell the owner
+the version, the release link, what is in it and what to check by hand.
 
-### Changes with nothing for players
+**Without a version.** Docs, workflows and tooling reach `main` without a bump, on the
+owner's order: fast-forward and skip `npm run bump`. If the owner wants a change users see to
+go live without a version, mark its CHANGELOG line
+`_(Live since YYYY-MM-DD, published without a version at the owner's request.)_`; it stays
+under Unreleased until the next release, where `npm run bump` drops the mark. So the
+CHANGELOG alone always tells what is live.
 
-Docs, workflows and Render config can reach `main` without a version bump, still only on
-the owner's order: fast-forward `main` to `dev` as above and skip `npm run bump`. The
-`Release` workflow sees the version is already tagged and does nothing; Render restarts
-the server, which ends any online match in progress.
+## 10. Something is wrong in production
 
-Tags are created only by the `Release` workflow. Cloud sessions cannot push tags or
-delete branches; never try to work around that.
+- _Rollback first:_ the owner re-runs the deploy of the previous release from the Actions
+  tab (or the host's rollback), from a phone.
+- _Hotfix:_ fix on `dev` with a test that reproduces the bug, a `Fixed` line in the
+  CHANGELOG, then ask the owner for a `patch` release.
+- _Undo a release:_ `git revert` on `dev`, then a `patch` release. Never reset or
+  force-push.
 
-## 6. Something is wrong in production
+## 11. Dependency updates
 
-- **Rollback first, fix second.** In the Render dashboard the owner can open the service,
-  go to Events, and roll back to the previous deploy. Suggest this when the live game is
-  broken, before any fix.
-- **Hotfix.** Fix on `dev` with a test that reproduces the bug, add a `Fixed` or `Security`
-  line to the CHANGELOG, then ask the owner for a `patch` release. Do not push to `main`
-  without that order, even for a hotfix.
-- **Undo a release.** `git revert` the offending commits on `dev`, then a `patch` release.
-  Never reset or force-push `main`.
+Dependabot opens at most two grouped pull requests a month against `dev` (npm, GitHub
+Actions). Security updates target the default branch: never merge them from GitHub; merge
+into `dev` locally like any update. For each: read its changelog, merge into `dev`, run
+`npm run check` and `npm run e2e`, push, note it in the CHANGELOG if users notice. An update
+that breaks the build gets an `ignore` in `dependabot.yml` with the reason, and the owner is
+told. Tools pinned to the cloud sessions' versions (Playwright) are never upgraded alone.
 
-## 7. Dependency updates
+## 12. The documents
 
-Dependabot opens monthly pull requests against `dev`. When the owner asks to handle them:
-read the changelog of the update, merge into `dev` locally, run `npm test` (and a browser
-check for anything that touches the client), push `dev`, and note it under `Changed` in the
-CHANGELOG if it matters to players. Security updates are worth a `patch` release; say so.
+| File           | Holds                                                       |
+| -------------- | ----------------------------------------------------------- |
+| `CLAUDE.md`    | How work is done (this file)                                |
+| `README.md`    | What it is, how to run it, the layout; links to open issues |
+| `DESIGN.md`    | Rules, numbers and behaviour: what the product does and why |
+| `CHANGELOG.md` | Every change users notice, by version                       |
+| `SECURITY.md`  | What is stored, which hosts, threats and answers, settings  |
 
-## 8. Layout
+## 13. This project
 
-```
-index.html, vite.config.js    Vite entry page and build settings
-public/                       copied as they are: favicon.svg, icons/, manifest.webmanifest, sw.js
-eslint.config.js, .prettierrc.json   lint rules and code layout, enforced in CI
-shared/config.js              constants, VERSION, palette, power-ups, SERVER_URL
-shared/protocol.js            the online wire format: server encodes, browser decodes
-shared/sim/                   pure simulation (no DOM, no timers): round, grid, bot, match, motion
-src/main.jsx, src/App.jsx     React entry and top component
-src/engine/                   no React: game.js (match state machine), renderer.js, input.js,
-                              audio.js, net.js, backButton.js, prediction.js, haptics.js
-src/state/, src/hooks/        saved settings + context; hooks that connect components to the engine
-src/i18n/strings.js           Hebrew and English strings
-src/components/               ui/ (shared controls), menu/, game/, SettingsDialog.jsx
-src/styles/                   base.css, menu.css, game.css (logical CSS properties: RTL and LTR share rules)
-dist/                         build output, not in git; this is what the server serves
-server/server.js              static files from dist/, WebSocket rooms, security limits
-server/room.js                one room: lobby, match, broadcast (no sockets, unit tested)
-scripts/bump.mjs              version bump for a release
-scripts/release-notes.mjs     CHANGELOG section for the GitHub release
-tests/                        node --test: sim, room, server, engine, back button, layout, settings
-tests/e2e/                    browser smoke test (npm run e2e), not part of npm test
-.github/workflows/            checks.yml (every check, shared), ci.yml (dev and pull requests),
-                              release.yml (checks, then tag and release on main)
-render.yaml                   Render service: free plan, Frankfurt, builds and deploys main
-DESIGN.md, CHANGELOG.md, SECURITY.md, README.md, LICENSE (MIT)
-```
+- **Stack:** React 19 and Vite, in **JavaScript**, not TypeScript: the owner chose to keep it
+  for now, and the move is issue #4. ESLint and Prettier, `node:test` for unit tests,
+  Playwright (Chromium) for the browser test. Node 22 (`.nvmrc`). Runtime dependencies:
+  react, react-dom, ws, and the two `@fontsource` fonts.
+- **Hosting:** one free web service on Render, Frankfurt (`render.yaml`, from a Blueprint).
+  The Node server serves the built site from `dist/` and runs the online rooms over
+  WebSocket. Render deploys `main` only after the checks on the commit pass (its Auto-Deploy
+  setting "After CI Checks Pass"); `release.yml` runs those checks. The Tag workflow
+  (`tag.yml`, every half hour or by hand from the Actions tab) tags a version once
+  https://kavoom.onrender.com/version serves it. Rollback (section 10) is the Render
+  dashboard: the service, Events, roll back to the previous deploy. The free server sleeps
+  after 15 idle minutes; why its waking page stays is in `DESIGN.md`.
+- **Commands:** `npm run dev` (Vite with instant reload; run `npm start` beside it for online
+  rooms), `npm run build`, `npm start` (the server on http://localhost:8080, `PORT` to
+  change), `npm run check`, `npm run format`, `npm run build && npm run e2e`,
+  `npm run bump -- patch|minor|major`.
+- **Layout:**
 
-- `shared/sim/` must stay free of DOM and timers: the same code runs the local game, the
-  menu demo and the online server.
-- `src/engine/` must stay free of React. The match runs there; components only read
-  `game.ui` (through `useGameUi`) and call engine methods.
-- Code layout is whatever Prettier produces; do not hand-format against it. Comments say
-  why, not what.
-- One component per file, named like the file. A component that grows past about 150 lines
-  should be split.
+  ```
+  index.html, vite.config.js   Vite entry page and build settings (the version comes from package.json)
+  public/                      copied as they are: favicon.svg, icons/, manifest.webmanifest, sw.js
+  shared/config.js             constants: arena, physics, palette, power-ups, SERVER_URL
+  shared/protocol.js           the online wire format: server encodes, browser decodes and checks
+  shared/sim/                  pure simulation (no DOM, no timers): round, grid, bot, match, motion
+  src/main.jsx, src/App.jsx    React entry and top component
+  src/engine/                  no React: game.js (match state machine), renderer.js, input.js,
+                               audio.js, net.js, backButton.js, prediction.js, haptics.js
+  src/state/, src/hooks/       saved settings, record and seat, and hooks to the engine
+  src/i18n/strings.js          Hebrew and English strings
+  src/components/              ui/ (shared controls), menu/, game/, SettingsDialog, RulesDialog
+  src/styles/                  base.css, menu.css, game.css (tokens on :root, logical properties)
+  server/server.js             static files from dist/, WebSocket rooms, security limits, /version
+  server/room.js               one room: lobby, match, broadcast (no sockets, unit tested)
+  scripts/                     changelog.mjs (tested helpers), bump.mjs, release-plan.mjs,
+                               release-history.json (past releases and their commits)
+  tests/                       node --test; tests/e2e/ the browser test
+  .github/                     checks.yml, ci.yml, release.yml, tag.yml, dependabot.yml
+  ```
 
-## 9. Commands
-
-- `npm run build`: build the site into `dist/` (needed before `npm start`)
-- `npm start`: server on http://localhost:8080 (`PORT` to change)
-- `npm run dev`: Vite dev server with instant reload on http://localhost:5173; run
-  `npm start` beside it for online rooms
-- `npm test`: builds, then runs every test; must pass before any push
-- `npm run lint`: ESLint; must pass before any push (CI runs it)
-- `npm run format`: Prettier rewrites the files; `npm run format:check` only checks (CI runs it)
-- `npm run e2e`: browser smoke test (needs a prior `npm run build`; Playwright is a dev
-  dependency pinned to the version preinstalled in cloud sessions, so do not upgrade it alone)
-- `npm run bump -- patch|minor|major`: prepare a release
-
-## 10. Security rules
-
-- Only files in `PUBLIC_FILES` / `PUBLIC_DIRS` inside `dist/` are served (`server/server.js`),
-  checked after the path is resolved. A new public file means adding it there and to the server test.
-- Validate every value from a client against a closed list; clamp every number.
-- Render player text as React text (`{name}`), never with `dangerouslySetInnerHTML`.
-- No inline scripts or styles in `index.html`; the CSP forbids them. In components, the
-  `style` prop is fine (React sets it through the DOM, which the CSP allows). A new external host
-  (font, CDN) needs a CSP change in `server/server.js` and a reason.
-- No secrets in the repository. Configuration that varies goes in Render environment variables.
-- Any change to the server's limits or headers gets a line under `Security` in the CHANGELOG
-  and an update to `SECURITY.md`.
+- **Rules only this project has:**
+  - `shared/sim/` stays free of DOM and timers: the same code runs the local game, the menu
+    demo and the online server. `src/engine/` stays free of React: components only read
+    `game.ui` (through `useGameUi`) and call engine methods.
+  - Online, the server is the only referee; the browser sends input and draws what it is
+    told, predicting heads only for display (`DESIGN.md`, section 10).
+  - The server serves only `PUBLIC_FILES` / `PUBLIC_DIRS` inside `dist/`, checked after the
+    path is resolved; a new public file means adding it there and to the server test. Any
+    change to the server's limits or headers gets a `Security` line in the CHANGELOG and an
+    update to `SECURITY.md`.
+  - In components the `style` prop is fine (React sets it through the DOM, which the policy
+    allows); `index.html` has no inline script or style.
+  - "Every screen has its own address" does not apply: the game is one screen whose menu and
+    match are states, and a room's code leaves the address once joined (the device remembers
+    the seat instead). An invite link carries the code.
+  - Cloud sessions cannot reach the live site or push tags; the owner confirms the live
+    version.

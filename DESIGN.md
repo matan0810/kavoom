@@ -25,7 +25,7 @@ The browser side is a React app, built by Vite into `dist/`. The Node server ser
 index.html               Vite entry page (loads src/main.jsx)
 public/                  files copied as they are: favicon.svg, icons/, manifest.webmanifest,
                          sw.js (service worker: offline copy of the game)
-shared/config.js         constants: version, arena, physics, palette, keys, power-ups
+shared/config.js         constants: arena, physics, palette, keys, power-ups (the version is in package.json)
 shared/protocol.js       the online wire format (server encodes, browser decodes)
 shared/sim/grid.js       occupancy grid for collisions
 shared/sim/round.js      one round: movement, collisions, gaps, power-ups, round points
@@ -55,7 +55,7 @@ src/components/SettingsDialog.jsx
 src/styles/              base.css, menu.css, game.css (tokens on :root, logical properties)
 server/server.js         static files from dist/ + WebSocket rooms + security limits
 server/room.js           one online room (no sockets, unit tested)
-scripts/                 release helpers
+scripts/                 release helpers: changelog.mjs (tested), bump.mjs, release-plan.mjs
 tests/                   node --test: simulation, rooms, server
 ```
 
@@ -258,8 +258,8 @@ Touch:
 is taken from the network when it answers within 2.5 seconds (so a release shows on the next
 visit) and from the saved copy otherwise; hashed files in `assets/` always come from the
 saved copy. A page is saved only if it really is the game (it has the app's root element and
-script), so the host's waking-up page never replaces it. Local play therefore works offline. Fonts come from Google and fall back to the
-system font offline. Online play is never cached.
+script), so the host's waking-up page never replaces it. Local play therefore works offline. The fonts ship with the game, and the woff2 files a
+stylesheet uses are saved too, so they work offline as well. Online play is never cached.
 
 The free server sleeps after 15 idle minutes. A first visit to a sleeping server shows
 Render's own "application loading" page for about a minute; Render serves it before our code
@@ -351,17 +351,24 @@ Nobody can cheat from the browser, and everyone sees the same game.
 - Prediction (`tests/prediction.test.js`): the head moves exactly as in the round; with a
   simulated 120 ms connection the predicted head stays within a line's width of the truth;
   other players keep their turn, all heads move on by the same time.
-- Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode.
+- Protocol (`tests/protocol.test.js`): a snapshot survives encode, JSON and decode; every
+  message a real match sends passes the browser's check, and broken ones are refused.
 - Layout and renderer: when the arena turns upright, and that the turn is a pure rotation.
 - Settings: bad saved values are replaced or clamped, language detection.
 - Texts (`tests/i18n.test.js`): every `t('key')` in the code and every power-up has a Hebrew
   and an English text.
-- Version: `shared/config.js` matches `package.json`.
+- Repository (`tests/repo.test.js`): no install scripts and no pre/post hooks, every checkout
+  without a kept token, read-only workflows, the version the same in package.json and the
+  lockfile.
+- Release (`tests/changelog.test.js`): version bumps, the CHANGELOG turned into a release,
+  empty or repeated releases refused, a release's tag, commit and date checked.
 
 `npm run e2e` is a browser smoke test (Playwright, Chromium): desktop and phone, Hebrew and
 English, the tall arena and big buttons, the Back button in every situation, an online match
 between a desktop host and a phone guest (invite, lock, remove), and offline play from the
-saved copy. It checks for console errors and CSP violations. It is a separate command from
+saved copy. It checks for console errors, CSP violations and any request that leaves the site, and that
+Trusted Types are enforced. Every step waits for a condition on the page, never a fixed time,
+and gives up after 5 seconds. It is a separate command from
 `npm test` because it needs a browser; CI runs both, plus a production build and start, on
 every push and before every release. Safari and Firefox are not covered; a real phone is
 checked by hand after a release.

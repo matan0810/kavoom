@@ -7,6 +7,8 @@ breaking changes are major.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-22
+
 ### Changed
 - GitHub releases are now tagged only once the live site serves the new version: a Tag workflow checks every half hour (or when started by hand from the Actions tab) and creates any release that is missing.
 - The working procedure (CLAUDE.md) follows the project template: sections 1 to 12 are the shared method, and this project's facts are in section 13. SECURITY.md is now a table of threats, their answers and the tests that prove them.

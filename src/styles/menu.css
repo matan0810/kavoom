@@ -214,6 +214,20 @@ button.dot:hover {
   }
 }
 
+/* A newer version is live: one line with its button, under the bar. */
+.update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-block: 0;
+  padding-block: 8px;
+  padding-inline: 14px 8px;
+  border: 1px solid var(--all);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
 /* The player's record: a quiet last line under everything else. */
 .record {
   text-align: center;

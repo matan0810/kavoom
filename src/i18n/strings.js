@@ -203,6 +203,8 @@ const STRINGS = {
   waitingHost: { he: 'ממתינים שהמארח יתחיל.', en: 'Waiting for the host to start.' },
   matchRunning: { he: 'משחק רץ כרגע בחדר.', en: 'A match is running in this room.' },
   connecting: { he: 'מתחבר…', en: 'Connecting…' },
+  updateReady: { he: 'יש גרסה חדשה של המשחק.', en: 'A new version of the game is ready.' },
+  updateLoad: { he: 'רענן', en: 'Reload' },
   waking: {
     he: 'השרת מתעורר, זה לוקח בערך דקה…',
     en: 'The server is waking up, this takes about a minute…',

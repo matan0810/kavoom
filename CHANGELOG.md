@@ -7,6 +7,9 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Added
+- When a newer version is live than the saved copy on the device, the menu says so with a Reload button, instead of showing the old version until the next visit.
+
 ### Changed
 - A new release is tagged on GitHub as soon as Render finishes deploying it, instead of waiting for a scheduled check that GitHub may delay for hours.
 

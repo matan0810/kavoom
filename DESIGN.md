@@ -261,6 +261,12 @@ saved copy. A page is saved only if it really is the game (it has the app's root
 script), so the host's waking-up page never replaces it. Local play therefore works offline. The fonts ship with the game, and the woff2 files a
 stylesheet uses are saved too, so they work offline as well. Online play is never cached.
 
+When the saved copy opens while a newer version is live, the menu says so with a Reload
+button (`src/state/update.js`, `UpdateNotice`). The page asks `/version` when it opens and
+whenever it comes back into view; only a newer version counts, so an old server still
+answering during a deploy says nothing, and a failed request (offline, asleep) is silent.
+The notice never interrupts a match: it is part of the menu.
+
 The free server sleeps after 15 idle minutes. A first visit to a sleeping server shows
 Render's own "application loading" page for about a minute; Render serves it before our code
 runs, so it cannot be changed. This is accepted on purpose: the fixes (a paid plan, moving the

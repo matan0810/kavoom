@@ -201,8 +201,11 @@ async function main() {
   // ---------- Desktop, both languages ----------
   for (const locale of ['he-IL', 'en-US']) {
     const d = await open({ viewport: { width: 1280, height: 800 }, locale }, `desktop-${locale}`);
+    const asked = d.waitForResponse((r) => new URL(r.url()).pathname === '/version');
     await d.goto(url);
     await shown(d, '.menu .slot');
+    await asked;
+    assert.equal(await d.$('.update'), null, 'no update notice when the live version is this one');
     await d.click('.start-bar .btn');
     await d.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
     assert.equal(
@@ -240,6 +243,28 @@ async function main() {
       step('desktop: a typed target and no win-by-2 reach the match');
     }
   }
+
+  // ---------- A newer version is live ----------
+  for (const [tag, opts, words] of [
+    ['newer-he', { ...devices['iPhone 13'], locale: 'he-IL' }, /גרסה חדשה/],
+    ['newer-en', { viewport: { width: 1280, height: 800 }, locale: 'en-US' }, /new version/],
+  ]) {
+    const n = await open(opts, tag);
+    await n.route('**/version', (route) =>
+      route.fulfill({ contentType: 'application/json', body: '{"version":"99.0.0"}' }),
+    );
+    await n.goto(url);
+    await shown(n, '.update');
+    assert.match(await text(n, '.update'), words);
+    assert.ok(
+      await n.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      'no sideways scroll',
+    );
+    if (process.env.SHOTS) await n.screenshot({ path: `${process.env.SHOTS}/${tag}.png` });
+    await Promise.all([n.waitForEvent('load'), n.click('.update .btn')]);
+    await n.context().close();
+  }
+  step('a newer live version shows a notice whose button reloads the page');
 
   // ---------- Online: a desktop host and a phone guest ----------
   const host = await open({ viewport: { width: 1280, height: 800 }, locale: 'en-US' }, 'host');

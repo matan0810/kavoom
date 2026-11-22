@@ -3,6 +3,7 @@
 import { useSettings } from '../../state/SettingsContext.jsx';
 import { Hero } from './Hero.jsx';
 import { TopBar } from './TopBar.jsx';
+import { UpdateNotice } from './UpdateNotice.jsx';
 import { LocalPane } from './LocalPane.jsx';
 import { OnlinePane } from './OnlinePane.jsx';
 
@@ -12,6 +13,7 @@ export function MenuScreen({ online, identity, stats, onStartLocal, onOpenSettin
     <main className="screen menu">
       <Hero />
       <TopBar onOpenSettings={onOpenSettings} onOpenRules={onOpenRules} />
+      <UpdateNotice />
       {settings.tab === 'local' ? (
         <LocalPane onStart={onStartLocal} />
       ) : (

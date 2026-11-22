@@ -255,16 +255,21 @@ async function main() {
     );
     await n.goto(url);
     await shown(n, '.update');
+    await until(n, () => document.querySelector('.update').getAnimations().length === 0); // slid in
     assert.match(await text(n, '.update'), words);
     assert.ok(
       await n.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       'no sideways scroll',
     );
     if (process.env.SHOTS) await n.screenshot({ path: `${process.env.SHOTS}/${tag}.png` });
-    await Promise.all([n.waitForEvent('load'), n.click('.update .btn')]);
+    await n.click('.update-close');
+    await hidden(n, '.update');
+    await n.reload();
+    await shown(n, '.update'); // back on the next visit
+    await Promise.all([n.waitForEvent('load'), n.click('.update-load')]);
     await n.context().close();
   }
-  step('a newer live version shows a notice whose button reloads the page');
+  step('a newer live version: a notice that reloads, or closes until the next visit');
 
   // ---------- Online: a desktop host and a phone guest ----------
   const host = await open({ viewport: { width: 1280, height: 800 }, locale: 'en-US' }, 'host');

@@ -214,18 +214,70 @@ button.dot:hover {
   }
 }
 
-/* A newer version is live: one line with its button, under the bar. */
+/* A newer version is live: a pill that floats down over the top of the page. */
 .update {
+  position: fixed;
+  inset-block-start: 14px;
+  inset-inline: 0;
+  z-index: 15; /* above the menu, under dialogs */
+  width: max-content;
+  max-width: calc(100% - 2 * var(--gutter));
+  margin-inline: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-block: 0;
-  padding-block: 8px;
-  padding-inline: 14px 8px;
-  border: 1px solid var(--all);
-  border-radius: 10px;
-  background: var(--panel);
+  gap: 6px;
+  padding-block: 5px;
+  padding-inline: 16px 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 45%);
+  font-size: 14px;
+  animation: update-in 0.4s ease-out;
+}
+.update-dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--all);
+  margin-inline-end: 4px;
+  flex-shrink: 0;
+}
+.update-load {
+  margin-inline-start: 8px;
+  min-height: 34px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chalk);
+  color: var(--ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+.update-close {
+  inline-size: 34px;
+  block-size: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+.update-close:hover {
+  color: var(--text);
+}
+@keyframes update-in {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .update {
+    animation: none;
+  }
 }
 
 /* The player's record: a quiet last line under everything else. */

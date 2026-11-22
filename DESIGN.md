@@ -261,8 +261,9 @@ saved copy. A page is saved only if it really is the game (it has the app's root
 script), so the host's waking-up page never replaces it. Local play therefore works offline. The fonts ship with the game, and the woff2 files a
 stylesheet uses are saved too, so they work offline as well. Online play is never cached.
 
-When the saved copy opens while a newer version is live, the menu says so with a Reload
-button (`src/state/update.js`, `UpdateNotice`). The page asks `/version` when it opens and
+When the saved copy opens while a newer version is live, a small pill slides down over the
+top of the menu with a Reload button and a × that hides it until the next visit
+(`src/state/update.js`, `UpdateNotice`). The page asks `/version` when it opens and
 whenever it comes back into view; only a newer version counts, so an old server still
 answering during a deploy says nothing, and a failed request (offline, asleep) is silent.
 The notice never interrupts a match: it is part of the menu.

@@ -330,3 +330,21 @@ test('the server reports the version from package.json, never cached', () =>
     assert.deepEqual(JSON.parse(res.body), { version: pkg.version });
     assert.equal(res.headers['cache-control'], 'no-store');
   }));
+
+test('the fonts are served from the site itself, with font types and long caching', () =>
+  withServer(async (port) => {
+    const page = (await get(port, '/')).body;
+    const cssPath = /href="(\/assets\/[^"]+\.css)"/.exec(page)[1];
+    const css = (await get(port, cssPath)).body;
+    const fonts = [...css.matchAll(/url\((\/assets\/[^)]+\.woff2?)\)/g)].map((m) => m[1]);
+    assert.ok(fonts.length >= 8, 'Heebo and Secular One, Hebrew and Latin');
+    for (const font of fonts.slice(0, 4)) {
+      const res = await get(port, font);
+      assert.equal(res.status, 200, font);
+      assert.match(res.headers['content-type'], /^font\/woff2?$/);
+      assert.match(res.headers['cache-control'], /immutable/);
+    }
+    const csp = (await get(port, '/')).headers['content-security-policy'];
+    assert.match(csp, /font-src 'self';/);
+    assert.doesNotMatch(csp, /googleapis|gstatic/);
+  }));

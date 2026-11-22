@@ -27,6 +27,11 @@ function assetsOf(html) {
   return [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]);
 }
 
+// The font files a stylesheet uses (woff2 only: every browser with a service worker reads it).
+function fontsOf(css) {
+  return [...css.matchAll(/url\(["']?(\/assets\/[^"')]+\.woff2)["']?\)/g)].map((m) => m[1]);
+}
+
 function isGamePage(html) {
   return html.includes('<div id="root">') && assetsOf(html).length > 0;
 }
@@ -34,8 +39,15 @@ function isGamePage(html) {
 // Save a fresh page with everything it needs, and drop assets no page uses any more.
 async function savePage(response, html) {
   const cache = await caches.open(CACHE);
-  const assets = assetsOf(html);
-  await cache.addAll([...EXTRAS, ...assets]);
+  const linked = assetsOf(html);
+  await cache.addAll([...EXTRAS, ...linked]);
+  const fonts = [];
+  for (const path of linked.filter((p) => p.endsWith('.css'))) {
+    const css = await (await cache.match(path)).text();
+    fonts.push(...fontsOf(css));
+  }
+  await cache.addAll(fonts);
+  const assets = [...linked, ...fonts];
   await cache.put(PAGE, response);
   for (const request of await cache.keys()) {
     const path = new URL(request.url).pathname;

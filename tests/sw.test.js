@@ -39,6 +39,7 @@ function sandbox() {
     },
     keys: async () => [...store.keys()].map((url) => ({ url })),
     delete: async (r) => store.delete(abs(r)),
+    match: async (r) => store.get(abs(r))?.clone(),
   };
   const caches = {
     open: async () => cache,
@@ -133,4 +134,21 @@ test('with no network at all, the saved game opens', async () => {
   await sw.install();
   sw.routes.delete('/');
   assert.equal(await sw.open(), gamePage('one'));
+});
+
+test('the fonts a stylesheet uses are saved with the page, and kept', async () => {
+  const sw = sandbox();
+  const page = `<!doctype html><html><head><script type="module" crossorigin src="/assets/one.js"></script><link rel="stylesheet" crossorigin href="/assets/one.css"></head><body><div id="root"></div></body></html>`;
+  sw.routes.set('/', page);
+  sw.routes.set('/assets/one.js', 'code');
+  sw.routes.set(
+    '/assets/one.css',
+    '@font-face{src:url(/assets/heebo-a.woff2) format("woff2"),url(/assets/heebo-a.woff) format("woff")}',
+  );
+  sw.routes.set('/assets/heebo-a.woff2', 'font');
+  await sw.install();
+  assert.ok(sw.stored().includes('/assets/heebo-a.woff2'), 'woff2 saved');
+  assert.ok(!sw.stored().includes('/assets/heebo-a.woff'), 'the older format is not');
+  assert.equal(await sw.open(), page);
+  assert.ok(sw.stored().includes('/assets/heebo-a.woff2'), 'not pruned on the next visit');
 });

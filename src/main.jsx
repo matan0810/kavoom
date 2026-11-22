@@ -5,6 +5,16 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.jsx';
 import { SettingsProvider } from './state/SettingsContext.jsx';
 import { game } from './engine/index.js';
+// The fonts ship with the game (no request to an outside host, and they work offline):
+// only the Hebrew and Latin letters, in the weights the game uses.
+import '@fontsource/heebo/hebrew-400.css';
+import '@fontsource/heebo/latin-400.css';
+import '@fontsource/heebo/hebrew-500.css';
+import '@fontsource/heebo/latin-500.css';
+import '@fontsource/heebo/hebrew-700.css';
+import '@fontsource/heebo/latin-700.css';
+import '@fontsource/secular-one/hebrew-400.css';
+import '@fontsource/secular-one/latin-400.css';
 import './styles/base.css';
 import './styles/menu.css';
 import './styles/game.css';

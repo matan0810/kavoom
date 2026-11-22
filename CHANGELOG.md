@@ -10,6 +10,11 @@ breaking changes are major.
 ### Changed
 - GitHub releases are now tagged only once the live site serves the new version: a Tag workflow checks every half hour (or when started by hand from the Actions tab) and creates any release that is missing.
 
+- The fonts now ship with the game instead of loading from Google, so they also work offline and no player's browser contacts Google.
+
+### Security
+- The content policy no longer allows any outside host: styles and fonts come from the site itself.
+
 ## [1.6.0] - 2026-11-20
 
 ### Added

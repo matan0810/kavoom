@@ -41,6 +41,8 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.webmanifest': 'application/manifest+json',
+  '.woff2': 'font/woff2', // the fonts ship with the game (src/main.jsx)
+  '.woff': 'font/woff',
 };
 
 // Only these files and folders inside dist/ are ever served. Everything else
@@ -60,8 +62,8 @@ function contentSecurityPolicy(host) {
   return [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' https://fonts.googleapis.com",
-    'font-src https://fonts.gstatic.com',
+    "style-src 'self'",
+    "font-src 'self'",
     "img-src 'self' data:",
     `connect-src 'self'${ownSocket}`,
     "manifest-src 'self'",

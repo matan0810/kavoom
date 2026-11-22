@@ -107,6 +107,16 @@ function publicPath(urlPath) {
 // Best effort: behind a proxy the first X-Forwarded-For entry is the client.
 // It can be forged, which only lets an attacker dodge the per-address cap;
 // the server-wide caps still hold.
+// The function a room uses to send to one connection. A client that stopped reading
+// must not make the server hoard its snapshots: past LIMITS.bufferedBytes queued, it is cut.
+export function sender(ws) {
+  return (text) => {
+    if (ws.readyState !== 1) return;
+    if (ws.bufferedAmount > LIMITS.bufferedBytes) return ws.terminate();
+    ws.send(text);
+  };
+}
+
 function clientIp(req) {
   const fwd = req.headers['x-forwarded-for'];
   if (typeof fwd === 'string' && fwd) return fwd.split(',')[0].trim();
@@ -126,11 +136,13 @@ function originAllowed(req, extra) {
 }
 
 // healthEveryMs: how often the game loop's health is logged (tests make it short).
+// sweepEveryMs: how often dead and idle connections are looked for.
 export function startServer({
   port = 8080,
   allowedOrigins = [],
   log = console.log,
   healthEveryMs = 60000,
+  sweepEveryMs = 20000, // how often silent connections are looked for (tests make it short)
 } = {}) {
   const rooms = new Map();
   const perIp = new Map(); // address -> open connections
@@ -231,12 +243,7 @@ export function startServer({
     ws.on('pong', () => (ws.isAlive = true));
     ws.on('error', () => {});
 
-    const send = (s) => {
-      if (ws.readyState !== 1) return;
-      // A client that stopped reading must not make the server hoard its snapshots.
-      if (ws.bufferedAmount > LIMITS.bufferedBytes) return ws.terminate();
-      ws.send(s);
-    };
+    const send = sender(ws);
     const fail = (code) => send(JSON.stringify({ t: 'error', code }));
     const enter = (r, m) => {
       if (!m) return fail('full');
@@ -362,7 +369,7 @@ export function startServer({
       ws.isAlive = false;
       ws.ping();
     }
-  }, 20000);
+  }, sweepEveryMs);
 
   server.listen(port);
 

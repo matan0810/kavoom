@@ -36,3 +36,11 @@ test('workflows are read-only unless a job asks for more', async () => {
     assert.match(text, /^permissions:\n\s+contents: read$/m, name);
   }
 });
+
+test('the version in package.json and package-lock.json is the same', async () => {
+  const pkg = JSON.parse(await read('package.json'));
+  const lock = JSON.parse(await read('package-lock.json'));
+  assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+  assert.equal(lock.version, pkg.version);
+  assert.equal(lock.packages[''].version, pkg.version);
+});

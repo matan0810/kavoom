@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import WebSocket from 'ws';
-import { startServer } from '../server/server.js';
+import { LIMITS, sender, startServer } from '../server/server.js';
 
 const quiet = () => {};
 
@@ -354,4 +354,69 @@ test("the content policy enforces Trusted Types with the game's one policy", () 
     const csp = (await get(port, '/')).headers['content-security-policy'];
     assert.match(csp, /require-trusted-types-for 'script'/);
     assert.match(csp, /trusted-types kavoom(;|$)/);
+  }));
+
+// Run fn with some LIMITS lowered, and put them back afterwards.
+async function withLimits(changes, fn) {
+  const saved = { ...LIMITS };
+  Object.assign(LIMITS, changes);
+  try {
+    await fn();
+  } finally {
+    Object.assign(LIMITS, saved);
+  }
+}
+const until = async (check, ms = 3000) => {
+  for (const end = Date.now() + ms; Date.now() < end;) {
+    if (await check()) return true;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  return false;
+};
+
+test('a connection that stops reading is cut once too much is waiting for it', () => {
+  const ws = { readyState: 1, bufferedAmount: 0, sent: 0, cut: false };
+  ws.send = () => ws.sent++;
+  ws.terminate = () => (ws.cut = true);
+  const send = sender(ws);
+  send('a');
+  assert.equal(ws.sent, 1);
+  ws.bufferedAmount = LIMITS.bufferedBytes + 1; // the client stopped reading
+  send('b');
+  assert.equal(ws.cut, true);
+  assert.equal(ws.sent, 1, 'nothing more is queued');
+  ws.readyState = 3;
+  send('c');
+  assert.equal(ws.sent, 1, 'nothing goes to a closed connection');
+});
+
+test('a lobby member who stays silent too long is disconnected', () =>
+  withLimits({ idleLobbyMs: 150 }, () =>
+    withServer(
+      async (port) => {
+        const quiet = await join(port, { t: 'create', name: 'Q' });
+        const closed = new Promise((r) => quiet.ws.on('close', () => r(true)));
+        assert.equal(
+          await Promise.race([closed, new Promise((r) => setTimeout(() => r(false), 2000))]),
+          true,
+        );
+      },
+      { sweepEveryMs: 50 },
+    ),
+  ));
+
+test('a room that fails closes alone; the server and other rooms go on', () =>
+  withServer(async (port, app) => {
+    const a = await join(port, { t: 'create', name: 'A' });
+    const b = await join(port, { t: 'create', name: 'B' });
+    const told = nextMessage(a.ws, 'error');
+    app.rooms.get(a.msg.code).tick = () => {
+      throw new Error('broken room');
+    };
+    assert.equal((await told).code, 'lost');
+    assert.ok(await until(() => !app.rooms.has(a.msg.code)));
+    assert.ok(app.rooms.has(b.msg.code), 'the other room is still open');
+    assert.equal((await get(port, '/healthz')).status, 200);
+    a.ws.close();
+    b.ws.close();
   }));

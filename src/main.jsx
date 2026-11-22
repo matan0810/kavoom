@@ -29,9 +29,18 @@ createRoot(document.getElementById('root')).render(
 
 // Install the service worker (public/sw.js) that keeps the game on the device.
 // Only in the built site: during development it would serve stale files.
+// The content policy enforces Trusted Types, so the worker's address goes through a
+// policy that accepts this one address and nothing else.
+const trusted = window.trustedTypes?.createPolicy('kavoom', {
+  createScriptURL: (address) => {
+    if (address === '/sw.js') return address;
+    throw new TypeError(`Not a script this game loads: ${address}`);
+  },
+});
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    const worker = trusted ? trusted.createScriptURL('/sw.js') : '/sw.js';
+    navigator.serviceWorker.register(worker).catch(() => {});
   });
 }
 

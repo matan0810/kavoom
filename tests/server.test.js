@@ -348,3 +348,10 @@ test('the fonts are served from the site itself, with font types and long cachin
     assert.match(csp, /font-src 'self';/);
     assert.doesNotMatch(csp, /googleapis|gstatic/);
   }));
+
+test("the content policy enforces Trusted Types with the game's one policy", () =>
+  withServer(async (port) => {
+    const csp = (await get(port, '/')).headers['content-security-policy'];
+    assert.match(csp, /require-trusted-types-for 'script'/);
+    assert.match(csp, /trusted-types kavoom(;|$)/);
+  }));

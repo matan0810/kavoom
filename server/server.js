@@ -72,6 +72,9 @@ function contentSecurityPolicy(host) {
     "base-uri 'none'",
     "form-action 'none'",
     "frame-ancestors 'none'",
+    // Trusted Types: script URLs and HTML can only come from our own policy (src/main.jsx).
+    "require-trusted-types-for 'script'",
+    'trusted-types kavoom',
   ].join('; ');
 }
 

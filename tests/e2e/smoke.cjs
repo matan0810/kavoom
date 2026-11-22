@@ -70,6 +70,17 @@ async function main() {
       .map((b) => b.textContent),
   );
   assert.deepEqual(small, [], 'every menu button is a comfortable tap target');
+  // Trusted Types are enforced: the browser refuses HTML from a plain string.
+  const refused = await phone.evaluate(() => {
+    try {
+      document.createElement('div').innerHTML = '<b>x</b>';
+      return false;
+    } catch {
+      return true;
+    }
+  });
+  assert.ok(refused, 'Trusted Types are on');
+  problems.length = 0; // that refusal is reported as a violation, on purpose
   step('phone menu: fits the width, big buttons');
 
   await phone.click('.start-bar .btn');

@@ -240,7 +240,7 @@ told. Tools pinned to the cloud sessions' versions (Playwright) are never upgrad
   The Node server serves the built site from `dist/` and runs the online rooms over
   WebSocket. Render deploys `main` only after the checks on the commit pass (its Auto-Deploy
   setting "After CI Checks Pass"); `release.yml` runs those checks. The Tag workflow
-  (`tag.yml`, every half hour or by hand from the Actions tab) tags a version once
+  (`tag.yml`, as soon as Render reports a finished deploy, with a half-hourly fallback) tags a version once
   https://kavoom.onrender.com/version serves it. Rollback (section 10) is the Render
   dashboard: the service, Events, roll back to the previous deploy. The free server sleeps
   after 15 idle minutes; why its waking page stays is in `DESIGN.md`.

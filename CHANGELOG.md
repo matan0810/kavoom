@@ -7,6 +7,9 @@ breaking changes are major.
 
 ## [Unreleased]
 
+### Changed
+- A new release is tagged on GitHub as soon as Render finishes deploying it, instead of waiting for a scheduled check that GitHub may delay for hours.
+
 ## [1.7.0] - 2026-11-22
 
 ### Changed

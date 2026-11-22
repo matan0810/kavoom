@@ -44,3 +44,11 @@ test('the version in package.json and package-lock.json is the same', async () =
   assert.equal(lock.version, pkg.version);
   assert.equal(lock.packages[''].version, pkg.version);
 });
+
+test('releases are tagged when Render reports a finished deploy, not only on a schedule', async () => {
+  const tag = await read('.github/workflows/tag.yml');
+  assert.match(tag, /^on:\n\s+deployment_status:/m);
+  assert.match(tag, /deployment_status\.state == 'success'/);
+  assert.match(tag, /^\s+schedule:/m, 'the schedule stays as a fallback');
+  assert.doesNotMatch(tag, /^\s+push:/m, 'a push run would be a check Render waits for');
+});

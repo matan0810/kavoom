@@ -19,7 +19,14 @@
 //     pts  points earned so far this round, per player
 //     n    simulation steps so far this round: the server's clock (120 steps a second)
 
-import { FX_KEYS, POWERUPS } from './config.js';
+import {
+  FX_KEYS,
+  LENGTH_CHOICES,
+  MAX_PLAYERS,
+  PALETTE,
+  POWERUPS,
+  TARGET_LIMITS,
+} from './config.js';
 
 const NO_EFFECTS = Object.freeze(Object.fromEntries(FX_KEYS.map((k) => [k, 0])));
 
@@ -99,4 +106,130 @@ export function decodeSnapshot(m) {
     points: m.pts,
     step: m.n,
   };
+}
+
+// ---------- checking what the browser receives ----------
+//
+// The browser trusts nothing it is sent (CLAUDE.md, section 5): every message from the
+// server is checked for its shape before it is used, and a message that fails is dropped,
+// so a broken or hostile message cannot crash the page. tests/protocol.test.js checks that
+// every message a real match sends passes.
+
+const isInt = (v, min = -Infinity, max = Infinity) => Number.isInteger(v) && v >= min && v <= max;
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const isStr = (v, max) => typeof v === 'string' && v.length <= max;
+const isBool = (v) => typeof v === 'boolean';
+const listOf = (v, check, max = 10000) => Array.isArray(v) && v.length <= max && v.every(check);
+const oneOf = (v, choices) => choices.includes(v);
+const colour = (v) => isInt(v, 0, PALETTE.length - 1);
+const name = (v) => isStr(v, 40); // ten characters, which emoji can make longer in code units
+const segment = (s) => listOf(s, isNum, 6) && s.length === 6 && isInt(s[0], 0, MAX_PLAYERS - 1);
+const code = (v) => typeof v === 'string' && /^[A-Z]{4}$/.test(v);
+
+const SETTING_CHOICES = {
+  length: LENGTH_CHOICES,
+  winBy2: ['on', 'off'],
+  powerups: ['on', 'off'],
+  botLevel: ['easy', 'medium', 'hard'],
+  locked: ['off', 'on'],
+  leavers: ['bot', 'out'],
+};
+
+function settingsOk(s) {
+  if (!s || typeof s !== 'object') return false;
+  if (!isInt(s.target, TARGET_LIMITS.min, TARGET_LIMITS.max)) return false;
+  return Object.entries(SETTING_CHOICES).every(([key, choices]) => oneOf(s[key], choices));
+}
+
+const member = (m) =>
+  !!m && isInt(m.id, 1) && name(m.name) && colour(m.color) && isBool(m.bot) && isBool(m.on);
+
+const playerState = (a) =>
+  Array.isArray(a) &&
+  a.length === 6 &&
+  isNum(a[0]) &&
+  isNum(a[1]) &&
+  isNum(a[2]) &&
+  oneOf(a[3], [0, 1]) &&
+  isNum(a[4]) &&
+  (a[5] === 0 || (listOf(a[5], isNum) && a[5].length === FX_KEYS.length));
+
+const item = (a) =>
+  Array.isArray(a) &&
+  a.length === 4 &&
+  isInt(a[0], 0, POWERUPS.length - 1) &&
+  a.slice(1).every(isNum);
+
+const event = (e) =>
+  Array.isArray(e) &&
+  ((e[0] === 'd' &&
+    e.length === 4 &&
+    isInt(e[1], 0, MAX_PLAYERS - 1) &&
+    isNum(e[2]) &&
+    isNum(e[3])) ||
+    (e[0] === 'k' &&
+      e.length === 5 &&
+      isInt(e[1], 0, MAX_PLAYERS - 1) &&
+      isNum(e[2]) &&
+      isNum(e[3]) &&
+      isInt(e[4], 0, POWERUPS.length - 1)) ||
+    (e[0] === 'c' && e.length === 1));
+
+const CHECKS = {
+  joined: (m) => code(m.code) && isInt(m.you, 1) && isStr(m.token, 64) && m.token.length > 0,
+  room: (m) =>
+    code(m.code) &&
+    isInt(m.host, 0) &&
+    oneOf(m.state, ['lobby', 'match']) &&
+    isBool(m.public) &&
+    isInt(m.startsIn, 0, 60) &&
+    settingsOk(m.settings) &&
+    listOf(m.members, member, MAX_PLAYERS),
+  round: (m) => {
+    const n = Array.isArray(m.order) ? m.order.length : 0;
+    return (
+      n >= 1 &&
+      n <= MAX_PLAYERS &&
+      listOf(m.order, (v) => isInt(v, 1)) &&
+      listOf(m.names, name) &&
+      m.names.length === n &&
+      listOf(m.colors, colour) &&
+      m.colors.length === n &&
+      listOf(m.scores, isNum) &&
+      m.scores.length === n &&
+      isInt(m.target, TARGET_LIMITS.min) &&
+      (m.lead === undefined || oneOf(m.lead, [1, 2])) &&
+      isInt(m.roundNo, 1) &&
+      (m.gone === undefined || listOf(m.gone, (i) => isInt(i, 0, n - 1))) &&
+      listOf(m.segs, segment, 200000)
+    );
+  },
+  s: (m) =>
+    oneOf(m.ph, ['c', 'p']) &&
+    isNum(m.cd) &&
+    listOf(m.p, playerState, MAX_PLAYERS) &&
+    listOf(m.it, item, 50) &&
+    isNum(m.wr) &&
+    listOf(m.g, segment) &&
+    listOf(m.e, event) &&
+    listOf(m.pts, isNum, MAX_PLAYERS) &&
+    (m.n === undefined || isInt(m.n, 0)),
+  roundEnd: (m) =>
+    isInt(m.winner, -1, MAX_PLAYERS - 1) &&
+    listOf(m.scores, isNum, MAX_PLAYERS) &&
+    isInt(m.champion, -1, MAX_PLAYERS - 1) &&
+    isInt(m.rounds, 0),
+  gone: (m) => isInt(m.i, 0, MAX_PLAYERS - 1),
+  pong: (m) => isNum(m.c),
+  error: (m) => isStr(m.code, 32),
+};
+
+// True when `m` is a message the browser knows, with every field the right shape.
+export function checkServerMessage(m) {
+  if (!m || typeof m !== 'object' || Array.isArray(m) || !Object.hasOwn(CHECKS, m.t)) return false;
+  try {
+    return CHECKS[m.t](m) === true;
+  } catch {
+    return false;
+  }
 }

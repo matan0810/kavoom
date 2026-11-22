@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SERVER_URL } from '../../shared/config.js';
+import { checkServerMessage } from '../../shared/protocol.js';
 import { LINKED_ROOM } from '../state/settings.js';
 import { Net } from '../engine/net.js';
 import { game } from '../engine/index.js';
@@ -82,6 +83,7 @@ export function useOnlineRoom(identity) {
 
   const onMessage = useCallback(
     (m) => {
+      if (!checkServerMessage(m)) return; // broken or unknown: dropped (shared/protocol.js)
       switch (m.t) {
         case 'joined':
           youRef.current = m.you;

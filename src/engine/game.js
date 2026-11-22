@@ -265,6 +265,7 @@ export class Game {
     const { view, draw, sfx } = this;
     if (this.mode !== 'online' || !view || this.state === 'idle' || this.state === 'matchEnd')
       return;
+    if (m.p.length !== this.hud.names.length) return; // not this round's players: ignored
     const snap = decodeSnapshot(m);
     const first = view.players.length === 0;
     view.players = snap.players;
@@ -320,13 +321,14 @@ export class Game {
 
   // A player left the match and their line is out of the game for good.
   onlineGone(m) {
-    if (this.mode !== 'online' || !this.hud.gone) return;
+    if (this.mode !== 'online' || !this.hud.gone || m.i >= this.hud.names.length) return;
     this.hud.gone.add(m.i);
     this.publish();
   }
 
   onlineRoundEnd(m) {
     if (this.mode !== 'online' || this.state === 'idle') return;
+    if (m.scores.length !== this.hud.names.length) return; // not this match's players
     this.hud.scores = m.scores;
     this.finishRound(m.winner, m.champion, m.rounds);
   }

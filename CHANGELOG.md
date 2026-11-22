@@ -14,6 +14,7 @@ breaking changes are major.
 
 ### Security
 - The content policy no longer allows any outside host: styles and fonts come from the site itself.
+- The game checks every message from the server before using it and drops a malformed one, so a broken or hostile message cannot crash the page.
 
 - Trusted Types are enforced: the browser refuses to turn plain text into HTML or script addresses, and the game's one policy allows only its offline copy (sw.js).
 ## [1.6.0] - 2026-11-20

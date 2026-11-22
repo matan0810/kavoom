@@ -4,13 +4,21 @@
 //   npm run build && npm run e2e
 //
 // Needs Playwright with a Chromium (preinstalled in cloud sessions). It is not part of
-// `npm test`, so CI and the Render build do not download a browser. Safari and Firefox
-// are not covered: only Chromium is installed in cloud sessions.
+// `npm test`, so the Render build does not download a browser. Safari and Firefox are not
+// covered: only Chromium is installed in cloud sessions.
+//
+// Every step waits for a condition on the page, never for a fixed time, and gives up after
+// 5 seconds (CLAUDE.md, section 4). It also fails if any request leaves the site.
 
 const assert = require('node:assert/strict');
 const { chromium, devices } = require('playwright');
 
-const settle = (p, ms = 350) => p.waitForTimeout(ms);
+const STEP_TIMEOUT_MS = 5000;
+const until = (page, fn, arg) => page.waitForFunction(fn, arg);
+const shown = (page, selector) => page.waitForSelector(selector);
+const hidden = (page, selector) => page.waitForSelector(selector, { state: 'detached' });
+const paused = (page, value) => until(page, (v) => window.__kavoom.game.paused === v, value);
+const state = (page, value) => until(page, (v) => window.__kavoom.game.ui.state === v, value);
 const text = (p, sel) => p.textContent(sel);
 const historyDepth = (p) => p.evaluate(() => (history.state && history.state.kavoomDepth) || 0);
 
@@ -21,7 +29,14 @@ async function main() {
   const url = `http://localhost:${app.server.address().port}/`;
   const browser = await chromium.launch();
   const problems = [];
+  const origin = new URL(url).origin;
   const watch = (page, tag) => {
+    page.on('request', (r) => {
+      const at = r.url();
+      if (!at.startsWith(`${origin}/`) && !at.startsWith('data:')) {
+        problems.push(`${tag}: a request left the site: ${at}`);
+      }
+    });
     page.on(
       'console',
       (m) => ['error', 'warning'].includes(m.type()) && problems.push(`${tag}: ${m.text()}`),
@@ -29,7 +44,9 @@ async function main() {
     page.on('pageerror', (e) => problems.push(`${tag}: ${e.message}`));
   };
   const open = async (opts, tag) => {
-    const page = await (await browser.newContext(opts)).newPage();
+    const context = await browser.newContext(opts);
+    context.setDefaultTimeout(STEP_TIMEOUT_MS);
+    const page = await context.newPage();
     watch(page, tag);
     return page;
   };
@@ -38,7 +55,7 @@ async function main() {
   // ---------- Phone, Hebrew, one device ----------
   const phone = await open({ ...devices['iPhone 13'], locale: 'he-IL' }, 'phone-he');
   await phone.goto(url);
-  await settle(phone, 600);
+  await shown(phone, '.menu .slot');
   assert.equal(await phone.evaluate(() => document.documentElement.dir), 'rtl');
   assert.ok(
     await phone.evaluate(
@@ -77,12 +94,10 @@ async function main() {
 
   // Back button: pause dialog, then resume, then dialog and out to the menu.
   await phone.goBack();
-  await settle(phone);
-  assert.equal(await phone.evaluate(() => window.__kavoom.game.paused), true);
-  assert.ok(await phone.$('.card'));
+  await shown(phone, '.card');
+  await paused(phone, true);
   await phone.goBack();
-  await settle(phone);
-  assert.equal(await phone.$('.card'), null, 'a second Back closes the dialog');
+  await hidden(phone, '.card'); // a second Back closes the dialog
   assert.equal(
     await phone.evaluate(() => window.__kavoom.game.ui.state),
     'playing',
@@ -90,27 +105,24 @@ async function main() {
   );
   assert.equal(await phone.evaluate(() => location.pathname), '/', 'we never left the page');
   await phone.goBack();
-  await settle(phone);
+  await shown(phone, '.card');
   await phone.click('.overlay-actions .btn:last-child'); // main menu
-  await settle(phone);
-  assert.equal(await phone.evaluate(() => window.__kavoom.game.ui.state), 'idle');
-  assert.ok(await phone.$('.menu'));
+  await shown(phone, '.menu');
+  await state(phone, 'idle');
   assert.equal(await historyDepth(phone), 0, 'no history entries left behind');
   step('phone: Back opens the game menu, closes it, never leaves the site');
 
   // Settings dialog on the menu closes with Back.
-  await phone.click('.bar-end .btn');
-  await settle(phone);
-  assert.ok(await phone.$('.card'));
+  await phone.click('.bar-end .btn:not(.help)');
+  await shown(phone, '.card');
   await phone.goBack();
-  await settle(phone);
-  assert.equal(await phone.$('.card'), null);
+  await hidden(phone, '.card');
   assert.ok(await phone.$('.menu'));
   step('menu: Back closes the settings dialog');
 
   // The rules open from the "?" in the menu bar, start at the top, and close with Back.
   await phone.click('.bar .help');
-  await settle(phone);
+  await shown(phone, '.rules');
   assert.equal(await text(phone, '.card h2'), 'איך משחקים');
   assert.equal(await phone.$$eval('.rules-powerups li', (n) => n.length), 9, 'all nine power-ups');
   assert.equal(await phone.evaluate(() => document.querySelector('.overlay').scrollTop), 0);
@@ -120,22 +132,21 @@ async function main() {
   });
   assert.ok(drawn, 'the power-up icons are drawn');
   await phone.goBack();
-  await settle(phone);
-  assert.equal(await phone.$('.card'), null);
+  await hidden(phone, '.card');
   step('menu: the rules open from the ? button and close with Back');
 
   // Colour picker and a second human on the phone.
   await phone.click('.slot:nth-child(2) .seg button:nth-child(2)');
   await phone.click('.start-bar .btn');
-  await settle(phone, 600);
-  assert.equal(await phone.$$eval('.pad', (n) => n.length), 2, 'one pair of buttons per human');
+  await until(phone, () => document.querySelectorAll('.pad').length === 2); // one pair per human
   step('phone: two humans get two pairs of buttons');
 
   // Landscape phone: pads on both sides of the arena.
   const land = await open({ ...devices['iPhone 13 landscape'], locale: 'en-US' }, 'phone-land');
   await land.goto(url);
   await land.click('.start-bar .btn');
-  await settle(land, 800);
+  await shown(land, '.padbtn');
+  await until(land, () => document.querySelector('canvas.arena').clientWidth > 200); // sized
   const l = await land.evaluate(() => {
     const r = (s) => document.querySelector(s).getBoundingClientRect();
     return {
@@ -164,15 +175,15 @@ async function main() {
   await offline.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
   assert.equal(await offline.evaluate(() => window.__kavoom.game.ui.state), 'playing');
   await offline.goBack();
-  await settle(offline);
+  await shown(offline, '.card');
   await offline.click('.overlay-actions .btn:last-child');
   await offline.click('.tabs button:nth-child(2)');
   await offline.click('.btn.primary.big');
-  await offline.waitForFunction(
-    () => /No internet/.test(document.querySelector('.block [role=status]')?.textContent || ''),
-    null,
-    { timeout: 15000 },
+  await until(offline, () =>
+    /No internet/.test(document.querySelector('.block [role=status]')?.textContent || ''),
   );
+  // The fonts ship with the game, so they are there offline too.
+  assert.ok(await offline.evaluate(() => document.fonts.check('16px Heebo')), 'Heebo offline');
   step('offline: the saved copy opens, a local match plays, online says there is no internet');
   problems.length = 0; // failed requests while offline are expected
 
@@ -180,7 +191,7 @@ async function main() {
   for (const locale of ['he-IL', 'en-US']) {
     const d = await open({ viewport: { width: 1280, height: 800 }, locale }, `desktop-${locale}`);
     await d.goto(url);
-    await settle(d, 500);
+    await shown(d, '.menu .slot');
     await d.click('.start-bar .btn');
     await d.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
     assert.equal(
@@ -189,21 +200,18 @@ async function main() {
       'rail with pause, settings, menu',
     );
     await d.keyboard.press('Space');
-    await settle(d, 250);
-    assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true);
+    await paused(d, true);
     await d.keyboard.press('Space');
-    await settle(d, 250);
-    assert.equal(await d.evaluate(() => window.__kavoom.game.paused), false);
+    await paused(d, false);
     await d.keyboard.press('Escape');
-    await settle(d, 250);
-    assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true, 'Esc pauses');
+    await paused(d, true); // Esc pauses
+    await shown(d, '.card');
     // The game menu offers the rules too, and closing them goes back to the menu.
     await d.click(`.overlay-actions .btn:nth-child(3)`);
-    await settle(d, 250);
+    await shown(d, '.rules');
     assert.equal(await d.$$eval('.rules-powerups li', (n) => n.length), 9);
     await d.click('.overlay-actions .btn.primary'); // close
-    await settle(d, 250);
-    assert.equal(await d.$('.rules'), null);
+    await hidden(d, '.rules');
     assert.ok(await d.$('.card'), 'back on the pause menu');
     assert.equal(await d.evaluate(() => window.__kavoom.game.paused), true, 'still paused');
     step(`desktop ${locale}: rail, Space and Esc`);
@@ -215,7 +223,7 @@ async function main() {
       await d.click('.seg[aria-label="Win by 2"] button:nth-child(2)'); // off
       assert.match(await text(d, '.start-bar .hint'), /first to 3\.$/);
       await d.click('.start-bar .btn');
-      await settle(d, 400);
+      await shown(d, '.target');
       assert.equal(await text(d, '.target'), 'First to 3');
       assert.equal(await d.evaluate(() => window.__kavoom.game.match.lead), 1);
       step('desktop: a typed target and no win-by-2 reach the match');
@@ -234,7 +242,7 @@ async function main() {
 
   const guest = await open({ ...devices['iPhone 13'], locale: 'he-IL' }, 'guest');
   await guest.goto(`${url}#${code}`);
-  await settle(guest, 500);
+  await until(guest, (c) => document.querySelector('.field.code')?.value === c, code);
   assert.equal(await guest.inputValue('.field.code'), code, 'the shared link fills in the code');
   await guest.click('.join-row .btn');
   await guest.waitForSelector('.room-code');
@@ -317,27 +325,25 @@ async function main() {
   step('online: a reload mid-match returns to the same seat');
 
   await guest.goBack(); // leave dialog
-  await settle(guest);
+  await shown(guest, '.card');
   assert.match(await text(guest, '.card h2'), /לעזוב/);
   await guest.goBack();
-  await settle(guest);
-  assert.equal(await guest.$('.card'), null);
+  await hidden(guest, '.card');
   assert.notEqual(
     await guest.evaluate(() => window.__kavoom.game.ui.state),
     'idle',
     'the match went on',
   );
   await guest.goBack();
-  await settle(guest);
+  await shown(guest, '.card');
   await guest.click('.overlay-actions .btn:last-child'); // leave room
-  await settle(guest, 500);
-  assert.ok(await guest.$('.join-row'), 'back at the join form');
+  await shown(guest, '.join-row'); // back at the join form
   assert.equal(await historyDepth(guest), 0);
   step('online: Back asks before leaving, then leaving returns to the join form');
 
   await host.click('.side-actions .btn:last-child');
   await host.click('.overlay-actions .btn:last-child');
-  await settle(host, 400);
+  await shown(host, '.join-row');
   await host.click('.btn.primary.big'); // quick game: a public room
   await host.waitForSelector('.room-code');
   // The host reloads in the lobby: same room, still the host.
@@ -356,8 +362,7 @@ async function main() {
     'no lock on a public room',
   );
   await host.goBack();
-  await settle(host, 400);
-  assert.ok(await host.$('.join-row'), 'Back in a lobby leaves the room');
+  await shown(host, '.join-row'); // Back in a lobby leaves the room
   step('online: Back in a lobby leaves the room');
 
   // Leavers: the host picks "their line leaves", and a guest leaves mid-match.
@@ -378,7 +383,7 @@ async function main() {
   await host.click('.room-actions .btn.primary');
   await quitter.waitForFunction(() => window.__kavoom.game.ui.state === 'playing');
   await quitter.goBack();
-  await settle(quitter);
+  await shown(quitter, '.card p');
   assert.match(await text(quitter, '.card p'), /Your line leaves the game/);
   await quitter.click('.overlay-actions .btn:last-child');
   await host.waitForFunction(() => document.querySelector('.scores li.gone'));

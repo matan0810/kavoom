@@ -7,6 +7,8 @@ breaking changes are major.
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-11-22
+
 ### Added
 - When a newer version is live than the saved copy on the device, a small notice slides down from the top with a Reload button, instead of the old version showing until the next visit.
 
